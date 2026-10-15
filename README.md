@@ -47,7 +47,8 @@ split):
 
 | | HAL | symmetric HAL |
 |---|---|---|
-| Lalonde: one-step estimate of the training effect on 1978 earnings | $334 to $802 (0.8 standard errors) | $690 in every coding |
+| Lalonde: one-step estimate of the training effect on 1978 earnings, zero-order HAL | $334 to $802 (0.8 standard errors) | $690 in every coding |
+| Same, with `hal9001`'s default first-order HAL | -$37 to $526 (0.98 standard errors) | |
 | Boston housing: typical change in a test prediction | 0.11 SD of the outcome | under 0.001 SD |
 | Boston housing: test RMSE | 2.59 to 3.26 | 2.97 |
 

@@ -10,7 +10,9 @@ dir.create("figures", showWarnings = FALSE)
 dir.create("paper/tables", showWarnings = FALSE)
 
 label <- function(d) {
-  mutate(d, method = recode(method, hal = "HAL", shal = "symmetric HAL"))
+  mutate(d, method = factor(method, c("hal9001", "hal", "shal"),
+                            c("HAL, hal9001 defaults", "HAL, zero order",
+                              "symmetric HAL")))
 }
 ate <- read_csv("data/recode_ate.csv", show_col_types = FALSE) |> label()
 pred <- read_csv("data/recode_predictions.csv", show_col_types = FALSE) |>
@@ -65,7 +67,8 @@ kbl(effect_table, format = "latex", booktabs = TRUE, digits = 2,
   save_kable("paper/tables/recode_ate.tex")
 
 forest <- ate |>
-  mutate(recode = fct_reorder(factor(recode), ate * (method == "HAL"),
+  mutate(recode = fct_reorder(factor(recode),
+                              ate * (method == "HAL, zero order"),
                               .fun = max)) |>
   ggplot(aes(ate, recode)) +
   geom_vline(xintercept = 0, linetype = 2, colour = "grey50") +
@@ -78,5 +81,5 @@ forest <- ate |>
   theme_bw(base_size = 9)
 for (ext in c("pdf", "png")) {
   ggsave(file.path("figures", paste0("recode_ate.", ext)), forest,
-         width = 7, height = 4.5, dpi = 150)
+         width = 9, height = 4.5, dpi = 150)
 }

@@ -141,8 +141,10 @@ $(t-x)_+$, for the same reason; symmetric HAL is the zero-order, convex
 analogue. The lasso version of MARS \citep{ki2024} keeps only $(x-t)_+$,
 noting that $(t-x)_+ = (x-t)_+ - x + t$ lies in its span; the span is the
 same, but the penalty of a function is not, which is the subject of
-Section~\ref{sec:cost}. First-order HAL likewise uses one-sided hinges and
-has the same orientation dependence; we treat zero order. The implementation in
+Section~\ref{sec:cost}. First-order HAL, the \texttt{hal9001} default, likewise uses one-sided
+hinges; we develop the theory for zero order and show in
+Section~\ref{sec:real} that the default estimator is at least as sensitive
+to the coding. The implementation in
 \texttt{hal9001} \citep{hejazi2020} uses the anchored basis: we reproduce
 its fits exactly. Regression trees \citep{breiman1984} have no such
 dependence: a split at $c$ sends $x_j \ge c$ to one child and $x_j < c$ to
@@ -571,10 +573,18 @@ truncated to $[0.01, 0.99]$. The lower truncation binds in every fit
 of both methods.
 
 Table~\ref{tab:recode_ate} and Figure~\ref{fig:recode_ate} give the
-results. With HAL nuisance fits, the estimate ranges from \$334 to \$802
-across codings, a range of $0.8$ standard errors; the original coding
-happens to give the largest. With symmetric HAL nuisance fits the estimate
-is \$690 in every coding. The movement under HAL is smaller than the standard error, and no
+results. With zero-order HAL nuisance fits, the estimate ranges from \$334
+to \$802 across codings, a range of $0.8$ standard errors; the original
+coding happens to give the largest. With symmetric HAL nuisance fits the
+estimate is \$690 in every coding. Practitioners mostly run
+\texttt{hal9001} with its defaults, which use first-order HAL (one-sided
+hinges $(x_j - u)_+$ and their products, up to degree three) rather than
+the indicators studied here. Its fits depend on the coding too: with the
+default fits and the same folds the estimate ranges from $-\$37$ to
+\$526, a range of $0.98$ standard errors, and one coding changes its sign.
+Codings that negate only binary covariates leave the default estimate
+unchanged to the cent; the movement comes from the continuous ones (age,
+education and the two earnings variables). The movement under HAL is smaller than the standard error, and no
 estimate in either column is distinguishable from zero. It is, though, variation that the reported
 standard error does not include and that two analysts with the same data
 and the same software would not know to look for.
@@ -586,7 +596,9 @@ and the same software would not know to look for.
 \includegraphics[width=\textwidth]{../figures/recode_ate.pdf}
 \caption{One-step estimates of the effect of NSW training on 1978 earnings,
 with 95\% intervals, under the original coding and 20 random sign codings
-of the covariates. Codings are sorted by the HAL estimate.}
+of the covariates, with nuisance functions fit by default
+\texttt{hal9001} HAL, zero-order HAL and symmetric HAL. Codings are sorted
+by the zero-order HAL estimate.}
 \label{fig:recode_ate}
 \end{figure}
 
