@@ -1,0 +1,15 @@
+\begin{table}[!h]
+\centering
+\caption{\label{tab:recode_predictions}Predictions across random sign codings of the covariates, on a fixed test set of 30 percent of the rows. Mean SD and max range are per test point, in units of the outcome's standard deviation.}
+\centering
+\begin{tabular}[t]{llrrrrrr}
+\toprule
+Data & Method & Codings & Mean SD & Max range & RMSE min & RMSE median & RMSE max\\
+\midrule
+Boston & HAL & 21 & 0.115 & 1.298 & 2.585 & 2.888 & 3.258\\
+Boston & symmetric HAL & 21 & 0.000 & 0.000 & 2.973 & 2.973 & 2.973\\
+Ozone & HAL & 21 & 0.108 & 1.082 & 4.820 & 5.171 & 5.589\\
+Ozone & symmetric HAL & 21 & 0.000 & 0.003 & 5.123 & 5.123 & 5.123\\
+\bottomrule
+\end{tabular}
+\end{table}

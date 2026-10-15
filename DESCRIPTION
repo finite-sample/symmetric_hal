@@ -1,0 +1,28 @@
+Package: symmetrichal
+Type: Project
+Title: The Highly Adaptive Lasso Depends on How You Code Your Covariates
+Version: 0.1.0
+Authors@R:
+    person("Gaurav", "Sood", role = c("aut", "cre"), email = "gsood07@gmail.com")
+Description: Code, collected results and manuscript for a paper showing that
+    the zero-order Highly Adaptive Lasso changes its fit when a covariate is
+    negated, and that symmetric HAL, which adds the reflected indicators,
+    does not.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Imports:
+    glmnet,
+    hal9001,
+    kableExtra,
+    knitr,
+    MatchIt,
+    Matrix,
+    mlbench,
+    ranger,
+    rpart,
+    tidyverse
+Suggests:
+    lintr,
+    lpSolve,
+    testthat
+Config/testthat/edition: 3

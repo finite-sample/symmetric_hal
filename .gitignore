@@ -1,0 +1,12 @@
+results_*/
+*.html
+.Rhistory
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.pdf
+paper/*.fdb_latexmk
+paper/*.fls
+*.log
