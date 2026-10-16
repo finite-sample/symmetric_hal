@@ -1,4 +1,4 @@
-.PHONY: test lint check sims recode report paper clean
+.PHONY: test lint check sims recode lalonde semisynth data report paper clean
 
 CORES ?= 8
 REPS ?= 50
@@ -23,11 +23,27 @@ recode:
 	Rscript R/recode_run.R results_recode 21 $(CORES) >> results_recode/run.log 2>&1
 	Rscript R/recode_collect.R results_recode
 
+lalonde:
+	mkdir -p results_lalonde
+	Rscript R/lalonde_run.R results_lalonde 21 $(CORES) >> results_lalonde/run.log 2>&1
+	Rscript R/lalonde_collect.R results_lalonde
+
+semisynth:
+	mkdir -p results_semisynth
+	Rscript R/semisynth_run.R results_semisynth 100 $(CORES) >> results_semisynth/run.log 2>&1
+	Rscript R/semisynth_collect.R results_semisynth
+
+# Re-download the Dehejia-Wahba and PSID-1 files into data/lalonde_dw.csv.
+data:
+	Rscript R/lalonde_fetch.R
+
 # Figures and tables from data/ alone.
 report:
 	Rscript R/fig_coding.R
 	Rscript R/sim_report.R tier1
 	Rscript R/recode_report.R
+	Rscript R/lalonde_report.R
+	Rscript R/semisynth_report.R
 
 paper: report
 	cd paper && latexmk -pdf -interaction=nonstopmode -halt-on-error ms.tex

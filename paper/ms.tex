@@ -42,7 +42,13 @@ attains the same $n^{-2/3}$ rate and minimax optimality as HAL over its own
 variation class, at the price of a dictionary $2^D$ times larger for
 interactions of degree $D$. In simulations its median risk is up to $2.3$
 times lower than HAL's when the signal faces away from HAL's anchor and up
-to $18\%$ higher when it faces the anchor.
+to $18\%$ higher when it faces the anchor. The dependence matters most for
+the HAL that practitioners run. In LaLonde's comparison of a job-training
+experiment with observational estimates, the estimated effect on the
+trainees from \texttt{hal9001}'s default fits ranges from $-\$16{,}526$ to
+\$1{,}849 across sign codings of the covariates; with symmetric
+first-order fits it ranges from \$1{,}852 to \$1{,}903, against an
+experimental \$1{,}794.
 \end{abstract}
 
 \section{Introduction}
@@ -73,7 +79,9 @@ the variation of the true function, and that variation is the anchored
 one. Recoding a covariate leaves the asymptotic guarantee intact but
 changes the size of the class the truth must lie in, the fitted nuisance
 functions, and in finite samples the point estimate and its confidence
-interval. Section~\ref{sec:real} measures how much.
+interval. Section~\ref{sec:real} measures how much: on LaLonde's
+job-training data the default \texttt{hal9001} estimate of the effect on
+the trainees changes sign with the coding.
 
 Every HAL basis function switches on as covariates increase. A function
 that switches on as a covariate decreases has to be built from
@@ -124,9 +132,13 @@ This paper makes the dependence exact and removes it.
   constrained symmetric estimator inherits the $n^{-2/3}$ rate of
   \citet{fang2021} and is minimax rate optimal over its class
   (Proposition~\ref{prop:rate}).
-\item \emph{Evidence} (Section~\ref{sec:sims}). Simulations across signal
-  shapes and signal-to-noise ratios, with CART and random forests as
-  references, measure the gap in risk rather than in bounds.
+\item \emph{Evidence} (Sections~\ref{sec:sims}--\ref{sec:semisynth}).
+  Simulations across signal shapes and signal-to-noise ratios, with CART
+  and random forests as references, measure the gap in risk rather than in
+  bounds. Recoding the covariates of two prediction data sets and of
+  LaLonde's benchmark measures it on real data, and a semi-synthetic
+  version of the benchmark, with a known effect, measures bias, variance
+  and coverage of the treatment-effect estimators.
 \end{enumerate}
 
 \paragraph{Related work.} That Hardy--Krause variation depends on an anchor
@@ -560,47 +572,103 @@ would think to search for it.
 \input{tables/recode_predictions.tex}
 
 \paragraph{A treatment effect.} The case that motivates the paper is HAL
-as a nuisance estimator. We use the \citet{lalonde1986} data as
-distributed with \texttt{MatchIt} \citep{ho2011}: 185 participants in the
-National Supported Work job-training program and 429 non-experimental
-comparison individuals, with eight covariates (age, education, two race
+as a nuisance estimator, and the classic test of a nuisance estimator is
+\citet{lalonde1986}'s: estimate the effect of a job-training program from
+observational data and compare the answer with the program's own randomized
+experiment. We use the \citet{dehejia1999} sample of the National Supported
+Work (NSW) program: 185 trainees, whose experimental control group of 260
+gives an effect on 1978 earnings of \$1{,}794 (standard error \$671), and
+2{,}490 non-experimental comparison individuals from the Panel Study of
+Income Dynamics (PSID-1). The covariates are age, education, two race
 indicators, marital status, no high-school degree, and 1974 and 1975
-earnings). We estimate the average effect of training on 1978 earnings by
-the one-step (augmented inverse-probability-weighted) estimator, the
-first-order equivalent of TMLE, with HAL fits for the outcome regression
-given treatment and covariates and for the propensity score, the latter
-truncated to $[0.01, 0.99]$. The lower truncation binds in every fit
-of both methods.
+earnings. The target is the average effect on the treated, estimated by the
+cross-fitted augmented inverse-probability-weighted estimator
+\citep{chernozhukov2018} over five folds: the outcome regression is fit on
+the comparison group, the propensity score on everyone, the latter capped at
+$0.99$, and each nuisance function is tuned by cross-validation on folds that
+are fixed across codings.
 
-Table~\ref{tab:recode_ate} and Figure~\ref{fig:recode_ate} give the
-results. With zero-order HAL nuisance fits, the estimate ranges from \$334
-to \$802 across codings, a range of $0.8$ standard errors; the original
-coding happens to give the largest. With symmetric HAL nuisance fits the
-estimate is \$690 in every coding. Practitioners mostly run
-\texttt{hal9001} with its defaults, which use first-order HAL (one-sided
-hinges $(x_j - u)_+$ and their products, up to degree three) rather than
-the indicators studied here. Its fits depend on the coding too: with the
-default fits and the same folds the estimate ranges from $-\$37$ to
-\$526, a range of $0.98$ standard errors, and one coding changes its sign.
-Codings that negate only binary covariates leave the default estimate
-unchanged to the cent; the movement comes from the continuous ones (age,
-education and the two earnings variables). The movement under HAL is smaller than the standard error, and no
-estimate in either column is distinguishable from zero. It is, though, variation that the reported
-standard error does not include and that two analysts with the same data
-and the same software would not know to look for.
+We fit the nuisance functions four ways. Most applied work runs
+\texttt{hal9001} with its defaults, which are first-order HAL: one-sided
+hinges $(x_j - u)_+$ and their products up to degree three, with 50, 25 and
+12 knots per coordinate for degrees one to three. The symmetric first-order
+fit adds the reflected hinges $(u - x_j)_+$ through the route of
+Section~\ref{sec:comp}, with knots placed at quantiles that are symmetric
+under negation (\texttt{hal9001} places its knots at quantiles of the
+lower $98\%$ of each covariate, which a recoding moves). The zero-order fits
+are those of Section~\ref{sec:sims}.
 
-\input{tables/recode_ate.tex}
+Table~\ref{tab:lalonde_att} and Figure~\ref{fig:lalonde_att} give the 19
+distinct codings (two of the 20 random sign patterns repeated). With the
+default fits the estimate runs from $-\$16{,}526$ to \$1{,}849, a range of
+$18$ standard errors; leaving out the most extreme coding it still runs from
+$-\$5{,}240$ to \$1{,}849, and it is negative in 9 of the 19 codings. The
+coding moves the propensity fit as well as the outcome fit: in three
+codings, including the original one, some comparison individual reaches the
+$0.99$ cap, and the standard error triples. Zero-order HAL is less
+sensitive, from \$451 to \$3{,}551 (2.6 standard errors). Both symmetric
+estimators are flat: \$1{,}852 to \$1{,}903 with first-order fits, and
+\$2{,}800 in every coding with zero-order fits. The symmetric first-order basis is the same set of columns in every
+coding (we check this on these data), so by the argument of
+Proposition~\ref{prop:equiv}
+the exact fit is too, and the remaining spread, $0.05$ standard errors, is
+the solver's convergence tolerance; we keep \texttt{glmnet}'s default tolerance for these fits
+because a tighter one stops the cross-validation path early.
+
+This is evidence about coding, not about which estimator is right. The
+symmetric first-order estimate is \$79 from the experimental benchmark and
+the zero-order one \$1{,}006 from it, but the benchmark's own standard
+error is \$671, and agreement with one experiment is weak evidence of
+accuracy: these data are notorious for estimates that change with the
+specification \citep{smith2005}. Removing the dependence on coding fixes
+one of the specification choices; it does not make the remaining ones
+right. Section~\ref{sec:semisynth} measures bias and variance where the
+truth is known.
+
+\input{tables/lalonde_att.tex}
 
 \begin{figure}[!h]
 \centering
-\includegraphics[width=\textwidth]{../figures/recode_ate.pdf}
-\caption{One-step estimates of the effect of NSW training on 1978 earnings,
-with 95\% intervals, under the original coding and 20 random sign codings
-of the covariates, with nuisance functions fit by default
-\texttt{hal9001} HAL, zero-order HAL and symmetric HAL. Codings are sorted
-by the zero-order HAL estimate.}
-\label{fig:recode_ate}
+\includegraphics[width=\textwidth]{../figures/lalonde_att.pdf}
+\caption{Estimates of the effect of NSW training on 1978 earnings of the
+trainees, from the trainees and the PSID-1 comparison group, with 95\%
+intervals, under the original coding (1) and 18 further distinct sign
+codings of the covariates. Blue: the experimental estimate and its 95\%
+interval. Codings are sorted by the default \texttt{hal9001} estimate; one
+estimate lies off the scale and is labelled.}
+\label{fig:lalonde_att}
 \end{figure}
+
+\section{Bias and variance with a known effect}\label{sec:semisynth}
+
+LaLonde's comparison has one experiment to check against. To measure bias,
+variance and coverage we keep the LaLonde covariates and replace the
+treatment and the outcome with draws from known functions fitted to the
+same data. Each replicate resamples the 2{,}675 trainees and comparison
+individuals with replacement, draws treatment from the \citet{dehejia1999}
+propensity logit (age and its square, education, the race, marital and
+degree indicators, both earnings, and indicators of zero earnings in each
+year), capped at $0.95$, and draws 1978 earnings as a fitted function of
+the covariates for the comparison group (natural splines in age and both
+earnings, the indicators, and the zero-earnings steps; $R^2 = 0.57$), plus
+\$1{,}800 for the treated, plus Gaussian noise with the residual standard
+deviation, \$10{,}190. About 180 individuals per replicate are treated, as
+in the data, and the raw difference in mean earnings is around
+$-\$14{,}000$, so the confounding is as severe as in the original. The
+effect on the treated is \$1{,}800 by construction, and since the effect is
+constant and the noise homoskedastic, the efficiency bound for the
+estimator's standard deviation is
+$\sigma \{E[g/(1-g)]\}^{1/2} / (p \sqrt{n})$, where $g$ is the propensity
+score and $p$ the share treated, about \$2{,}300.
+
+Each replicate is estimated twice, under the original coding and with the
+four continuous covariates (age, education and both earnings) negated, with
+the estimator and folds of Section~\ref{sec:real} and nuisance fits from
+default \texttt{hal9001} and from symmetric first-order HAL. The two
+codings carry the same information, so an estimator's answer should not
+depend on which one it is given; across replicates we also get each
+estimator's bias, its standard deviation against the bound, and the
+coverage of its 95\% interval.
 
 \section{Discussion}
 

@@ -15,7 +15,6 @@ Imports:
     hal9001,
     kableExtra,
     knitr,
-    MatchIt,
     Matrix,
     mlbench,
     ranger,

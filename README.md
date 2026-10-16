@@ -42,18 +42,20 @@ lasso on the symmetric dictionary.
 
 ## What we find
 
-On real data, negating covariates at random (21 codings, same folds and test
-split):
+On real data, negating covariates at random (19 distinct codings, same folds
+and test split):
 
 | | HAL | symmetric HAL |
 |---|---|---|
-| Lalonde: one-step estimate of the training effect on 1978 earnings, zero-order HAL | $334 to $802 (0.8 standard errors) | $690 in every coding |
-| Same, with `hal9001`'s default first-order HAL | -$37 to $526 (0.98 standard errors) | |
+| LaLonde (185 NSW trainees vs PSID-1): effect of training on the trainees' 1978 earnings, `hal9001` default first-order fits | -$16,526 to $1,849 (17.8 standard errors) | $1,852 to $1,903 |
+| Same, zero-order fits | $451 to $3,551 (2.6 standard errors) | $2,800 |
 | Boston housing: typical change in a test prediction | 0.11 SD of the outcome | under 0.001 SD |
 | Boston housing: test RMSE | 2.59 to 3.26 | 2.97 |
 
-Symmetric HAL is not more accurate than a typical coding of HAL. What it removes
-is the dependence on the coding.
+The randomized experiment puts the LaLonde effect at $1,794 (SE $671). Agreement
+with one experiment says little about accuracy, and symmetric HAL is not more
+accurate than a typical coding of HAL on Boston. What it removes is the
+dependence on the coding.
 
 In simulations (n = 500, 10 covariates, 50 replicates per cell), symmetric HAL
 beats HAL by up to 2.3x in risk when a box points away from HAL's anchor. When
@@ -67,7 +69,10 @@ make check    # lint and tests
 make report   # figures and tables from the collected results in data/
 make paper    # report, then compile paper/ms.pdf
 make sims     # rerun the simulations (hours; CORES=8 REPS=50)
-make recode   # rerun the real-data recodings
+make recode   # rerun the prediction recodings
+make lalonde  # rerun the LaLonde recodings (hours)
+make semisynth  # rerun the semi-synthetic LaLonde simulation (hours)
+make data     # re-download the Dehejia-Wahba and PSID-1 files
 ```
 
 R dependencies are listed in `DESCRIPTION`
@@ -78,8 +83,11 @@ R dependencies are listed in `DESCRIPTION`
 | `R/basis.R` | anchored and symmetric dictionaries; `to_hal9001()` |
 | `R/fit.R` | the fitters used in the simulations |
 | `R/sim_*.R` | simulation design, run, collect, report |
-| `R/recode_*.R` | real-data recoding: run, collect, report |
-| `data/` | collected results, one row per fit |
+| `R/nuisance.R`, `R/att.R` | HAL nuisance fits (zero order and `hal9001`, anchored and symmetric); cross-fitted effect on the treated |
+| `R/recode_*.R` | prediction recodings: run, collect, report |
+| `R/lalonde_*.R` | LaLonde data, recodings: fetch, run, collect, report |
+| `R/semisynth_*.R` | semi-synthetic LaLonde: run, collect, report |
+| `data/` | the LaLonde data and collected results, one row per fit |
 | `paper/` | manuscript and generated tables |
 | `figures/` | generated figures |
 | `tests/` | checks of every proposition and of the hal9001 route |

@@ -85,3 +85,18 @@ test_that("CART is reflection-invariant", {
   expect_gt(sum(tree$frame$var == "x1"), 0)
   expect_equal(unname(predict(tree)), unname(predict(grow(xr))))
 })
+
+# Integer covariates put many values exactly halfway between two knots; the
+# tie rule has to commute with negation or the first-order symmetric basis
+# changes with the coding.
+test_that("symmetric knots commute with negation on tied data", {
+  source(file.path(root, "R", "nuisance.R"), local = TRUE)
+  set.seed(3)
+  x <- cbind(age = sample(16:55, 400, TRUE), educ = sample(0:18, 400, TRUE),
+             earn = round(rexp(400, 1 / 5000)))
+  for (bins in c(50, 25, 12)) {
+    xq <- symmetric_knots(x, bins)
+    expect_equal(symmetric_knots(-x, bins), -xq)
+    expect_true(all(apply(xq, 2, \(v) length(unique(v))) <= bins + 1))
+  }
+})

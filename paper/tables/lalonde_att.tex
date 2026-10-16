@@ -1,0 +1,16 @@
+\begin{table}[!h]
+\centering
+\caption{\label{tab:lalonde_att}Cross-fitted AIPW estimates of the effect of NSW training on 1978 earnings of the treated (dollars), from the 185 trainees and the PSID-1 comparison group, across random sign codings of the eight covariates. Range / SE is the range divided by the median standard error; median distance is from the experimental estimate, 1,794 (SE 671).}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\begin{tabular}[t]{lrrrrrrr}
+\toprule
+Nuisance fits & Codings & Min & Median & Max & Range / SE & Median SE & Median distance\\
+\midrule
+HAL, hal9001 defaults & 19 & -16,526 & 954 & 1,849 & 17.80 & 1,032 & 840\\
+symmetric HAL, first order & 19 & 1,852 & 1,873 & 1,903 & 0.05 & 1,122 & 79\\
+HAL, zero order & 19 & 451 & 2,251 & 3,551 & 2.60 & 1,194 & 934\\
+symmetric HAL, zero order & 19 & 2,782 & 2,800 & 2,800 & 0.01 & 1,256 & 1,006\\
+\bottomrule
+\end{tabular}}
+\end{table}
