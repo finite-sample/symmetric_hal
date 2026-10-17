@@ -52,6 +52,12 @@ and test split):
 | Boston housing: typical change in a test prediction | 0.11 SD of the outcome | under 0.001 SD |
 | Boston housing: test RMSE | 2.59 to 3.26 | 2.97 |
 
+In a semi-synthetic LaLonde with a known effect of $1,800 (66 replicates),
+the default `hal9001` estimator under the original coding is biased by -$2,058
+and its 95% intervals cover 36% of the time; negating the continuous covariates
+removes the bias. Symmetric first-order HAL is unbiased in both codings (-$17,
+-$19), at 0.95 times the efficiency bound, with 97% coverage.
+
 The randomized experiment puts the LaLonde effect at $1,794 (SE $671). Agreement
 with one experiment says little about accuracy, and symmetric HAL is not more
 accurate than a typical coding of HAL on Boston. What it removes is the

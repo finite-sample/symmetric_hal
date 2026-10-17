@@ -48,7 +48,12 @@ experiment with observational estimates, the estimated effect on the
 trainees from \texttt{hal9001}'s default fits ranges from $-\$16{,}526$ to
 \$1{,}849 across sign codings of the covariates; with symmetric
 first-order fits it ranges from \$1{,}852 to \$1{,}903, against an
-experimental \$1{,}794.
+experimental \$1{,}794. In a semi-synthetic version of the same data with a
+known effect, the default estimator is biased by more than its standard
+error under the original coding, so its 95\% intervals cover the truth
+$36\%$ of the time, while negating the continuous covariates removes the
+bias; the symmetric estimator is unbiased in both codings, close to the
+efficiency bound, and covers $97\%$ of the time.
 \end{abstract}
 
 \section{Introduction}
@@ -670,6 +675,37 @@ depend on which one it is given; across replicates we also get each
 estimator's bias, its standard deviation against the bound, and the
 coverage of its 95\% interval.
 
+Table~\ref{tab:semisynth} and Figure~\ref{fig:semisynth} give 66
+replicates. With the default fits the coding decides whether the estimator
+works. Under the original coding it is biased by $-\$2{,}058$ (Monte Carlo
+standard error about \$150), and its 95\% interval covers the truth in
+$36\%$ of replicates. Its standard deviation, \$1{,}207, is half the
+efficiency bound, below what any regular estimator can attain
+asymptotically: the estimate is precise about the wrong number, and its standard error, which matches that
+spread, cannot reveal the bias. Negating the four continuous covariates
+removes the bias ($\$97$) and restores coverage ($94\%$) but makes the
+estimator $1.3$ times as variable as the bound. Within a replicate the
+estimate moves by a median of \$2{,}014 between the two codings, more than
+the effect itself. With symmetric first-order fits the bias is
+$-\$17$ and $-\$19$ in the two codings (Monte Carlo standard error about
+\$270), the standard deviation is $0.95$ times the bound, coverage is
+$97\%$, and the median move between codings is \$11. A standard deviation
+at or slightly below the bound is within Monte Carlo error of it (the ratio
+is estimated to about $\pm 9\%$); the cap on the estimated propensity score
+can also trim variance at the cost of a little bias.
+
+\input{tables/semisynth.tex}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{../figures/semisynth.pdf}
+\caption{Semi-synthetic LaLonde: estimates of the effect on the treated in
+66 replicates, under the original coding and with the continuous covariates
+negated; lines join the two estimates from the same replicate. Blue: the
+true effect, \$1{,}800; red: the mean.}
+\label{fig:semisynth}
+\end{figure}
+
 \section{Discussion}
 
 HAL's anchor is a convention of the variation norm that became a modelling
@@ -678,8 +714,25 @@ uniform over a variation ball and so hide how large the ball has to be for
 a given function; Proposition~\ref{prop:box} shows that for simple
 functions the radius changes by a factor of up to $2^D - 1$ with the
 coding. Symmetric HAL removes the dependence at a constant-factor cost in
-dictionary size and none in rate. Where HAL feeds a causal estimate, it is
-the more defensible default.
+dictionary size and none in rate.
+
+In prediction the coding mostly shifts error around: symmetric HAL is not
+more accurate than a typical coding of HAL, and on boxes that face HAL's
+anchor it is somewhat worse. In causal estimation the coding can matter
+more, because the nuisance errors enter the estimate as a bias the standard
+error does not see. In the semi-synthetic LaLonde data the default
+\texttt{hal9001} estimator under the original coding has a standard
+deviation half the efficiency bound and a bias larger than that standard
+deviation, so its intervals are tight and wrong; one sign flip of the
+continuous covariates turns it into a nearly unbiased but noisier
+estimator. Neither the analyst nor the reported standard error can tell
+which of the two they have. Symmetric HAL gave an unbiased estimator near
+the bound in both codings. That is one design with one effect, and
+removing a dependence on coding does not settle the other specification
+choices, the knot rule, the degree, the propensity cap, that the LaLonde
+literature shows estimates are sensitive to \citep{smith2005}. It does
+remove a choice that no analyst knows they are making. Where HAL feeds a
+causal estimate, symmetric HAL is the more defensible default.
 
 \clearpage
 \bibliographystyle{apalike}

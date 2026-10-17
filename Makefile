@@ -30,7 +30,7 @@ lalonde:
 
 semisynth:
 	mkdir -p results_semisynth
-	Rscript R/semisynth_run.R results_semisynth 100 $(CORES) >> results_semisynth/run.log 2>&1
+	Rscript R/semisynth_run.R results_semisynth 66 $(CORES) >> results_semisynth/run.log 2>&1
 	Rscript R/semisynth_collect.R results_semisynth
 
 # Re-download the Dehejia-Wahba and PSID-1 files into data/lalonde_dw.csv.

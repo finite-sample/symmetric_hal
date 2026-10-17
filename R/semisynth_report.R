@@ -18,7 +18,10 @@ if ("error" %in% names(est)) {
   cat(sum(!is.na(est$error)), "estimates errored\n")
   est <- filter(est, is.na(error))
 }
+# Compare methods and codings on the same draws: keep replicates with all
+# four estimates.
 est <- est |>
+  filter(n() == 4, .by = rep) |>
   mutate(method = factor(method_labels[method], method_labels),
          coding = factor(coding_labels[coding], coding_labels))
 
@@ -60,10 +63,10 @@ p <- ggplot(est, aes(coding, att)) +
   geom_point(size = 0.6, alpha = 0.6) +
   stat_summary(fun = mean, geom = "point", colour = "red", size = 2) +
   facet_wrap(~method) +
-  labs(x = NULL, y = paste("estimated effect on the treated ($); blue:",
-                           "truth, red: mean, lines join a replicate")) +
+  scale_y_continuous(labels = scales::label_comma()) +
+  labs(x = NULL, y = "estimated effect on the treated ($)") +
   theme_bw(base_size = 9)
 for (ext in c("pdf", "png")) {
   ggsave(file.path("figures", paste0("semisynth.", ext)), p, width = 8,
-         height = 4.5, dpi = 150)
+         height = 3.6, dpi = 150)
 }

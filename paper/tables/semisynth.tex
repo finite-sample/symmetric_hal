@@ -1,0 +1,16 @@
+\begin{table}[!h]
+\centering
+\caption{\label{tab:semisynth}Semi-synthetic LaLonde: estimates of an effect on the treated of 1,800 dollars. SD / bound divides the standard deviation across replicates by the efficiency bound; coverage is that of the nominal 95 percent interval; median move is the median absolute change in the estimate between the two codings of the same replicate.}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\begin{tabular}[t]{llrrrrrrrr}
+\toprule
+Nuisance fits & Coding & Reps & Bias & SD & RMSE & SD / bound & Mean SE & Coverage & Median move\\
+\midrule
+HAL, hal9001 defaults & original & 66 & -2,058 & 1,207 & 2,381 & 0.53 & 1,029 & 0.36 & 2,014\\
+HAL, hal9001 defaults & continuous covariates negated & 66 & 97 & 2,996 & 2,974 & 1.30 & 2,228 & 0.94 & 2,014\\
+symmetric HAL, first order & original & 66 & -17 & 2,190 & 2,173 & 0.95 & 1,958 & 0.97 & 11\\
+symmetric HAL, first order & continuous covariates negated & 66 & -19 & 2,194 & 2,178 & 0.95 & 1,960 & 0.97 & 11\\
+\bottomrule
+\end{tabular}}
+\end{table}
