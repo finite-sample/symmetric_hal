@@ -106,7 +106,7 @@ fitters <- list(
     fit$yhat.test.mean
   }
 )
-for (m in c("hal", "shal", "hal9001", "shal9001")) {
+for (m in c("hal", "shal", "hal9001", "shal9001", "shal9001_scaled")) {
   fitters[[m]] <- local({
     method <- m
     \(tr, te, seed) {

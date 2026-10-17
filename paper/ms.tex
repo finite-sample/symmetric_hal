@@ -48,7 +48,8 @@ experiment with observational estimates, the estimated effect on the
 trainees from \texttt{hal9001}'s default fits ranges from $-\$16{,}526$ to
 \$1{,}849 across sign codings of the covariates; with symmetric
 first-order fits it ranges from \$1{,}852 to \$1{,}903, against an
-experimental \$1{,}794. In a semi-synthetic version of the same data with a
+experimental \$1{,}794; measuring earnings in thousands of dollars moves
+the default estimate to \$47{,}975. In a semi-synthetic version of the same data with a
 known effect, the default estimator is biased by more than its standard
 error under the original coding, so its 95\% intervals cover the truth
 $36\%$ of the time, while negating the continuous covariates removes the
@@ -653,6 +654,19 @@ estimate lies off the scale and is labelled.}
 \label{fig:lalonde_att}
 \end{figure}
 
+Units are a coding too. First-order hinges $(x_j - u)_+$ carry the units
+of $x_j$, and \texttt{hal9001} turns off \texttt{glmnet}'s standardization,
+so the penalty on a hinge depends on whether earnings are in dollars or
+thousands. Table~\ref{tab:lalonde_units} refits the original sign coding
+with age in months and both earnings in thousands of dollars. The default
+estimate moves from \$1{,}181 to \$47{,}975, with a standard error of
+\$49{,}796. The symmetric
+first-order estimate moves by \$158, $0.14$ standard errors. Dividing each
+covariate by its standard deviation before forming the hinges makes the
+covariates free of units, and the estimate is \$1{,}639 in both.
+
+\input{tables/lalonde_units.tex}
+
 \section{Bias and variance with a known effect}\label{sec:semisynth}
 
 LaLonde's comparison has one experiment to check against. To measure bias,
@@ -783,8 +797,10 @@ to $10^{-5}$ standard deviations, the first-order basis is the same set of
 717{,}337 columns in both codings and the fits agree to $0.01$ standard
 deviations along the whole penalty path, and what remains comes from
 cross-validation choosing between nearly tied penalties. First-order
-symmetric HAL inherits the dependence on units, which standardizing each
-covariate before forming the hinges removes; and on dummy variables it
+symmetric HAL inherits the dependence on units. Dividing each covariate by
+its standard deviation before forming the hinges removes it (the last row
+of Table~\ref{tab:audit}): the change under new units is $0$, and under
+negation a median of $0.006$. On dummy variables symmetric HAL
 can depend on the reference level, which coding a categorical covariate by
 all of its levels removes, since changing the reference then only permutes
 the columns.
@@ -820,7 +836,8 @@ penalties on products or on unstandardized hinges, and dummy coding each
 make a fit depend on how the covariates are written down. Least squares,
 the additive model and a single tree were free of all four; every
 penalized or distance-based estimator we tried depended on at least one. Where HAL feeds a
-causal estimate, symmetric HAL is the more defensible default.
+causal estimate, symmetric HAL with each covariate divided by its standard
+deviation is the more defensible default.
 
 \clearpage
 \bibliographystyle{apalike}

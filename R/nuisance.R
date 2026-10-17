@@ -63,11 +63,23 @@ hal9001_sym_cv <- function(x, y, family, foldid, newx) {
   map(newx, \(nx) as.vector(predict(fit, new_data = cbind(nx, -nx))))
 }
 
+# First-order hinges carry the units of their covariate and hal9001 turns
+# off glmnet's standardization, so the penalty depends on units. Dividing
+# each covariate by its training standard deviation removes that; shifts
+# already leave the fit unchanged.
+hal9001_sym_scaled_cv <- function(x, y, family, foldid, newx) {
+  spread <- apply(x, 2, stats::sd)
+  spread[spread == 0] <- 1
+  hal9001_sym_cv(sweep(x, 2, spread, `/`), y, family, foldid,
+                 map(newx, \(nx) sweep(nx, 2, spread, `/`)))
+}
+
 fit_nuisance <- function(method, x, y, family, foldid, newx) {
   switch(method,
     hal = hal_cv(x, y, FALSE, family, foldid, newx),
     shal = hal_cv(x, y, TRUE, family, foldid, newx),
     hal9001 = hal9001_cv(x, y, family, foldid, newx),
-    shal9001 = hal9001_sym_cv(x, y, family, foldid, newx)
+    shal9001 = hal9001_sym_cv(x, y, family, foldid, newx),
+    shal9001_scaled = hal9001_sym_scaled_cv(x, y, family, foldid, newx)
   )
 }

@@ -27,7 +27,8 @@ families <- tribble(
   "hal",                "HAL, zero order",           "HAL",
   "shal",               "symmetric HAL, zero order", "HAL",
   "hal9001",            "HAL, hal9001 defaults",     "HAL",
-  "shal9001",           "symmetric HAL, first order", "HAL"
+  "shal9001",           "symmetric HAL, first order", "HAL",
+  "shal9001_scaled",    "symmetric HAL, first order, scaled", "HAL"
 )
 codings <- c(negated = "Negated", negated_from_max = "Max minus x",
              shifted = "Shifted", rescaled = "Units",

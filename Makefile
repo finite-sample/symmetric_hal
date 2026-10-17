@@ -27,6 +27,9 @@ lalonde:
 	mkdir -p results_lalonde
 	Rscript R/lalonde_run.R results_lalonde 21 $(CORES) >> results_lalonde/run.log 2>&1
 	Rscript R/lalonde_collect.R results_lalonde
+	mkdir -p results_lalonde_units
+	Rscript R/lalonde_units_run.R results_lalonde_units $(CORES) >> results_lalonde_units/run.log 2>&1
+	Rscript R/lalonde_collect.R results_lalonde_units data/lalonde_units.csv
 
 semisynth:
 	mkdir -p results_semisynth

@@ -77,3 +77,30 @@ for (ext in c("pdf", "png")) {
   ggsave(file.path("figures", paste0("lalonde_att.", ext)), forest,
          width = 10, height = 4.5, dpi = 150)
 }
+
+# The same estimate with the covariates in other units (R/lalonde_units_run.R).
+units_labels <- c(original = "Original units",
+                  months_thousands = "Age in months, earnings in thousands")
+units <- read_csv("data/lalonde_units.csv", show_col_types = FALSE) |>
+  mutate(method = factor(c(method_labels,
+                           shal9001_scaled = paste("symmetric HAL, first",
+                                                   "order, scaled"))[method]),
+         units = units_labels[units],
+         estimate = sprintf("%s (%s)", scales::comma(att, 1),
+                            scales::comma(se, 1))) |>
+  select(method, units, estimate) |>
+  pivot_wider(names_from = units, values_from = estimate) |>
+  select(method, all_of(unname(units_labels))) |>
+  arrange(method)
+print(knitr::kable(units))
+kbl(units, format = "latex", booktabs = TRUE, linesep = "",
+    label = "lalonde_units", align = c("l", "r", "r"),
+    col.names = c("Nuisance fits", unname(units_labels)),
+    caption = paste("LaLonde estimates under the original sign coding,",
+                    "with the covariates in their original",
+                    "units and with age in months and 1974 and 1975 earnings",
+                    "in thousands of dollars (standard errors in",
+                    "parentheses). Scaled divides each covariate by its",
+                    "standard deviation before forming the hinges.")) |>
+  kable_styling(latex_options = "hold_position") |>
+  save_kable("paper/tables/lalonde_units.tex")

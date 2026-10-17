@@ -49,6 +49,7 @@ and test split):
 |---|---|---|
 | LaLonde (185 NSW trainees vs PSID-1): effect of training on the trainees' 1978 earnings, `hal9001` default first-order fits | -$16,526 to $1,849 (17.8 standard errors) | $1,852 to $1,903 |
 | Same, zero-order fits | $451 to $3,551 (2.6 standard errors) | $2,800 |
+| LaLonde, default first-order fits, earnings in dollars vs thousands and age in years vs months | $1,181 vs $47,975 | $1,639 in both (scaled) |
 | Boston housing: typical change in a test prediction | 0.11 SD of the outcome | under 0.001 SD |
 | Boston housing: test RMSE | 2.59 to 3.26 | 2.97 |
 
@@ -74,7 +75,9 @@ reference level of a categorical covariate), least squares, the additive model
 and CART never move. MARS (`earth`), histogram-based boosting (`xgboost`), the
 lasso with interactions (under shifts), first-order HAL (under units), and every
 penalized or distance-based estimator given dummy variables (under the reference
-level) do. Symmetric HAL removes only the one-sided-basis problem.
+level) do. Symmetric HAL removes the one-sided-basis problem; with first-order
+hinges, also divide each covariate by its standard deviation, or the fit depends
+on units.
 
 ## Reproduce
 
