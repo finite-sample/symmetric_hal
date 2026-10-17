@@ -11,15 +11,21 @@ Description: Code, collected results and manuscript for a paper showing that
 License: MIT + file LICENSE
 Encoding: UTF-8
 Imports:
+    dbarts,
+    e1071,
+    earth,
+    FNN,
     glmnet,
     hal9001,
     kableExtra,
     knitr,
     Matrix,
+    mgcv,
     mlbench,
     ranger,
     rpart,
-    tidyverse
+    tidyverse,
+    xgboost
 Suggests:
     lintr,
     lpSolve,

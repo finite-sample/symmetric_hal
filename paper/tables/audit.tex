@@ -1,0 +1,40 @@
+\begin{table}[!h]
+\centering
+\caption{\label{tab:audit}Boston housing: median (and largest) change in a test-set prediction when the covariates are recoded, in standard deviations of the outcome; 0 means under 0.005 at every test point. Negated, max minus x, shifted (by ten standard deviations) and units (times 100, 0.01 or 12) recode all eleven continuous covariates; reference level changes the omitted category of the nine-level highway-access index; new seed refits the original coding with another random seed. Test RMSE is for the original coding.}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\begin{tabular}[t]{lrrrrrrr}
+\toprule
+Estimator & Negated & Max minus x & Shifted & Units & Reference level & New seed & Test RMSE\\
+\midrule
+\addlinespace[0.3em]
+\multicolumn{8}{l}{\textbf{Unpenalized}}\\
+\hspace{1em}OLS & 0 & 0 & 0 & 0 & 0 & 0 & 4.36\\
+\hspace{1em}OLS, pairwise interactions & 0 & 0 & 0 & 0 & 0 & 0 & 6.80\\
+\hspace{1em}GAM (mgcv) & 0 & 0 & 0 & 0 & 0 & 0 & 3.13\\
+\addlinespace[0.3em]
+\multicolumn{8}{l}{\textbf{Penalized (glmnet)}}\\
+\hspace{1em}ridge & 0 & 0 & 0 & 0 & 0.01 (0.18) & 0 & 4.48\\
+\hspace{1em}lasso & 0 & 0 & 0 & 0 & 0.01 (0.10) & 0 & 4.38\\
+\hspace{1em}elastic net & 0 & 0 & 0 & 0 & 0.02 (0.14) & 0 & 4.39\\
+\hspace{1em}lasso, pairwise interactions & 0 & 0.10 (1.08) & 0.10 (1.16) & 0 & 0.04 (0.80) & 0 & 3.01\\
+\addlinespace[0.3em]
+\multicolumn{8}{l}{\textbf{Trees}}\\
+\hspace{1em}CART (rpart) & 0 & 0 & 0 & 0 & 0 & 0 & 4.25\\
+\hspace{1em}random forest (ranger) & 0.02 (0.11) & 0.02 (0.11) & 0.00 (0.01) & 0 & 0.01 (0.06) & 0.01 (0.09) & 2.92\\
+\hspace{1em}boosting (xgboost) & 0.04 (1.50) & 0.04 (1.50) & 0 & 0 & 0.02 (0.09) & 0 & 3.10\\
+\hspace{1em}BART (dbarts) & 0.04 (0.35) & 0.04 (0.35) & 0 & 0 & 0.04 (0.39) & 0.04 (0.24) & 2.48\\
+\addlinespace[0.3em]
+\multicolumn{8}{l}{\textbf{Other}}\\
+\hspace{1em}10 nearest neighbours & 0 & 0 & 0 & 0 & 0.00 (0.99) & 0 & 4.78\\
+\hspace{1em}SVM (e1071) & 0 & 0 & 0 & 0 & 0.01 (0.72) & 0 & 3.53\\
+\hspace{1em}MARS (earth) & 0.12 (1.62) & 0.12 (1.62) & 0 & 0.08 (1.53) & 0 & 0 & 3.84\\
+\addlinespace[0.3em]
+\multicolumn{8}{l}{\textbf{HAL}}\\
+\hspace{1em}HAL, zero order & 0.13 (0.79) & 0.13 (0.79) & 0 & 0 & 0.00 (0.06) & 0 & 2.91\\
+\hspace{1em}symmetric HAL, zero order & 0.01 (0.05) & 0.01 (0.05) & 0 & 0 & 0.01 (0.09) & 0 & 2.95\\
+\hspace{1em}HAL, hal9001 defaults & 0.13 (0.96) & 0.13 (0.96) & 0 & 0.31 (2.19) & 0 & 0 & 3.42\\
+\hspace{1em}symmetric HAL, first order & 0.02 (0.21) & 0.02 (0.21) & 0 & 0.34 (2.03) & 0.00 (0.13) & 0 & 3.17\\
+\bottomrule
+\end{tabular}}
+\end{table}

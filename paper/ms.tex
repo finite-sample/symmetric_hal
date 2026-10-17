@@ -53,7 +53,11 @@ known effect, the default estimator is biased by more than its standard
 error under the original coding, so its 95\% intervals cover the truth
 $36\%$ of the time, while negating the continuous covariates removes the
 bias; the symmetric estimator is unbiased in both codings, close to the
-efficiency bound, and covers $97\%$ of the time.
+efficiency bound, and covers $97\%$ of the time. The problem is not
+peculiar to HAL: refitting 18 common regression estimators under recodings
+that carry the same information, MARS, histogram-based gradient boosting,
+the lasso with interactions, first-order HAL, and every penalized or
+distance-based estimator given dummy variables change their predictions.
 \end{abstract}
 
 \section{Introduction}
@@ -144,6 +148,10 @@ This paper makes the dependence exact and removes it.
   LaLonde's benchmark measures it on real data, and a semi-synthetic
   version of the benchmark, with a known effect, measures bias, variance
   and coverage of the treatment-effect estimators.
+\item \emph{Beyond HAL} (Section~\ref{sec:audit}). An audit of 18 common
+  estimators under negation, shifts, changes of units and of the
+  reference level finds four mechanisms of coding dependence, of which
+  symmetric HAL removes one.
 \end{enumerate}
 
 \paragraph{Related work.} That Hardy--Krause variation depends on an anchor
@@ -706,6 +714,80 @@ true effect, \$1{,}800; red: the mean.}
 \label{fig:semisynth}
 \end{figure}
 
+\section{How common is coding dependence?}\label{sec:audit}
+
+HAL is not the only estimator whose fit depends on how the covariates are
+written down. An estimator is unaffected by a recoding when the recoding
+maps its whole fitting problem onto itself: the loss, the penalty, the
+candidate splits or knots, and the tuning. Least squares passes for any
+invertible linear recoding, since only the span of the design matters. A
+penalty adds a condition: the lasso and ridge penalties are unchanged when
+a coefficient changes sign, so negating a covariate is harmless, but not
+when a column is rescaled, which is why they are fit to standardized
+columns. A fixed convention for where knots or bins go adds another.
+
+We refit 18 estimators, each with its package defaults, on the Boston
+split of Section~\ref{sec:real} under recodings that carry the same
+information: the eleven continuous covariates negated, negated about their
+maximum (as when age becomes years to retirement), shifted, or put in
+other units, and the reference level of the one categorical covariate, a
+nine-level index of highway access, changed. Table~\ref{tab:audit} gives
+how far test predictions move. As a yardstick for the randomized
+estimators, the last column refits the original coding with a new seed.
+
+\input{tables/audit.tex}
+
+Least squares, with or without interactions, the additive model and CART
+are unaffected by every recoding. The random forest and BART move under
+recodings about as much as under a new seed, as expected of estimators
+that are invariant in distribution but not draw by draw. The other
+estimators fail in four ways.
+
+\emph{One-sided bases.} Both HALs move under negation, by a median of
+$0.13$ standard deviations. So does MARS as implemented in \texttt{earth},
+by $0.12$, even though MARS uses reflected pairs of hinges: with five
+terms, the original and the negated fits choose the same covariates but
+put the knots at different data values ($6.421$ and $6.411$ rooms;
+$6.07\%$ and $5.98\%$ lower-status population), and with more terms the
+fits diverge. It also moves, by $0.08$, under a change of units.
+
+\emph{Binning.} Gradient boosting in \texttt{xgboost} moves under negation
+by a median of $0.04$ and up to $1.5$ standard deviations. Its default
+tree method splits on histogram bins of each covariate; with the exact
+method the median change is $0$ and the largest $0.11$, a test point that
+falls between two training values.
+
+\emph{Penalized interactions.} The lasso with all pairwise products is
+unaffected by negation, which only flips the sign of a product, but moves
+by $0.10$ standard deviations when the covariates are shifted. Shifting
+$x_1$ by $c$ turns $x_1 x_2$ into $x_1 x_2 + c x_2$: the span is the same,
+but the penalty charges the interaction differently, so the selected
+model depends on where the origin is \citep{bien2013}. First-order HAL
+has the same problem with units, the largest movement in the table: its
+hinges $(x_j - u)_+$ are measured in the units of $x_j$, and
+\texttt{hal9001} turns off \texttt{glmnet}'s standardization, so a covariate
+in hundreds is penalized differently from one in units. Zero-order
+indicators are free of units.
+
+\emph{Dummy coding.} Every estimator that penalizes or measures distances
+on treatment-coded dummies depends on the reference level: ridge, lasso
+and elastic net, the lasso with interactions, nearest neighbours and the
+support vector machine (whose largest changes are $0.99$ and $0.72$
+standard deviations), boosting, and, slightly, three of the four HAL
+fits. This is known for the group lasso \citep{detmer2018}.
+
+Symmetric HAL removes only the first of these. Its residual movement
+under negation is not coding: at a fixed penalty the zero-order fits agree
+to $10^{-5}$ standard deviations, the first-order basis is the same set of
+717{,}337 columns in both codings and the fits agree to $0.01$ standard
+deviations along the whole penalty path, and what remains comes from
+cross-validation choosing between nearly tied penalties. First-order
+symmetric HAL inherits the dependence on units, which standardizing each
+covariate before forming the hinges removes; and on dummy variables it
+can depend on the reference level, which coding a categorical covariate by
+all of its levels removes, since changing the reference then only permutes
+the columns.
+
 \section{Discussion}
 
 HAL's anchor is a convention of the variation norm that became a modelling
@@ -731,7 +813,12 @@ the bound in both codings. That is one design with one effect, and
 removing a dependence on coding does not settle the other specification
 choices, the knot rule, the degree, the propensity cap, that the LaLonde
 literature shows estimates are sensitive to \citep{smith2005}. It does
-remove a choice that no analyst knows they are making. Where HAL feeds a
+remove a choice that no analyst knows they are making. Section~\ref{sec:audit}
+shows that such choices are common: one-sided bases, binning conventions,
+penalties on products or on unstandardized hinges, and dummy coding each
+make a fit depend on how the covariates are written down. Least squares,
+the additive model and a single tree were free of all four; every
+penalized or distance-based estimator we tried depended on at least one. Where HAL feeds a
 causal estimate, symmetric HAL is the more defensible default.
 
 \clearpage

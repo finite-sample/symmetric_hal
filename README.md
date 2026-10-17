@@ -68,6 +68,14 @@ beats HAL by up to 2.3x in risk when a box points away from HAL's anchor. When
 the box points toward it, HAL is 3 to 18% better, the price of a dictionary
 four times larger for interactions.
 
+HAL is not alone. Refitting 18 common regression estimators on Boston housing
+under recodings that carry the same information (negation, shifts, units, the
+reference level of a categorical covariate), least squares, the additive model
+and CART never move. MARS (`earth`), histogram-based boosting (`xgboost`), the
+lasso with interactions (under shifts), first-order HAL (under units), and every
+penalized or distance-based estimator given dummy variables (under the reference
+level) do. Symmetric HAL removes only the one-sided-basis problem.
+
 ## Reproduce
 
 ```
@@ -78,6 +86,7 @@ make sims     # rerun the simulations (hours; CORES=8 REPS=50)
 make recode   # rerun the prediction recodings
 make lalonde  # rerun the LaLonde recodings (hours)
 make semisynth  # rerun the semi-synthetic LaLonde simulation (hours)
+make audit    # rerun the 18-estimator coding audit
 make data     # re-download the Dehejia-Wahba and PSID-1 files
 ```
 
@@ -93,6 +102,7 @@ R dependencies are listed in `DESCRIPTION`
 | `R/recode_*.R` | prediction recodings: run, collect, report |
 | `R/lalonde_*.R` | LaLonde data, recodings: fetch, run, collect, report |
 | `R/semisynth_*.R` | semi-synthetic LaLonde: run, collect, report |
+| `R/audit_*.R` | coding audit of 18 estimators: run, collect, report |
 | `data/` | the LaLonde data and collected results, one row per fit |
 | `paper/` | manuscript and generated tables |
 | `figures/` | generated figures |
