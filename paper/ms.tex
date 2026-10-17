@@ -602,7 +602,8 @@ $0.99$, and each nuisance function is tuned by cross-validation on folds that
 are fixed across codings.
 
 We fit the nuisance functions four ways. Most applied work runs
-\texttt{hal9001} with its defaults, which are first-order HAL: one-sided
+\texttt{hal9001} with its defaults, which in the current CRAN release
+(0.4.6) are first-order HAL: one-sided
 hinges $(x_j - u)_+$ and their products up to degree three, with 50, 25 and
 12 knots per coordinate for degrees one to three. The symmetric first-order
 fit adds the reflected hinges $(u - x_j)_+$ through the route of
