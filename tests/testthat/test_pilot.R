@@ -1,0 +1,31 @@
+test_that("fixed knots are used within every training fold", {
+  x <- toy_x(24, 2, 251)
+  y <- x[, 1]^2 + x[, 2]
+  knots <- list(c(-0.3, 0.3), c(-0.2, 0.5))
+  fit <- cv_hal(x, y, c(0.05, 0.1), rep(1:3, 8), knots = knots)
+  expect_setequal(fit$features$u[fit$features$j == 1], knots[[1]])
+  reflected <- cv_hal(-x, y, c(0.05, 0.1), rep(1:3, 8),
+                      knots = lapply(knots, `-`))
+  newx <- toy_x(12, 2, 252)
+  expect_equal(fit$predict(newx), reflected$predict(-newx), tolerance = 1e-6)
+  expect_error(fit_hal(x, y, 0.1, knots = list(0)), "per column")
+})
+
+test_that("independent and discrete integration use the target distribution", {
+  source(file.path(root, "R", "pilot.R"), local = TRUE)
+  x <- matrix(0, 2, 2)
+  knots <- rep(list(c(0.25, 0.5, 0.75)), 2)
+  upper <- pilot_integration(x, "upper", "independent", knots)
+  expect_equal(sum(upper$weights), 1)
+  expect_equal(sum(upper$weights * upper$mean), 1 / 16)
+  expect_equal(sum(upper$weights * upper$second), 1 / 16)
+  conflicting <- pilot_integration(x, "conflicting", "independent", knots)
+  expect_equal(sum(conflicting$weights * conflicting$mean), 1 / 8)
+  smooth <- pilot_integration(x, "smooth", "independent", knots)
+  expect_equal(sum(smooth$weights * smooth$mean), 1 / 3)
+  expect_equal(sum(smooth$weights * smooth$second), 0.7)
+  discrete <- pilot_integration(matrix(0, 2, 3), "upper", "discrete", knots)
+  expect_equal(nrow(discrete$x), 25)
+  expect_equal(discrete$x[, 2], discrete$x[, 3])
+  expect_equal(sum(discrete$weights * discrete$mean), 4 / 25)
+})

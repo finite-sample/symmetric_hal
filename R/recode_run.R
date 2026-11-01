@@ -1,3 +1,4 @@
+source("R/runs.R")
 # Rscript R/recode_run.R <out_dir> <recodings> <cores>
 # Coding sensitivity of HAL predictions on real data. Each recoding negates
 # every covariate independently with probability 1/2 (recoding 1 is the
@@ -9,6 +10,7 @@ suppressMessages({
   library(Matrix)
 })
 source(file.path("R", "basis.R"))
+source(file.path("R", "fit.R"))
 source(file.path("R", "nuisance.R"))
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -59,17 +61,20 @@ patterns <- map(d_of, \(d) {
 jobs <- expand_grid(data = names(d_of), recode = seq_len(n_recode),
                     method = c("hal", "shal")) |>
   mutate(path = file.path(out_dir, sprintf("%s_%s_%02d.rds", data, method,
-                                           recode))) |>
-  filter(!file.exists(path))
+                                           recode)))
+register_run(out_dir, jobs$path)
+jobs <- filter(jobs, !file.exists(path))
 cat(nrow(jobs), "fits to run\n")
 
 invisible(parallel::mclapply(seq_len(nrow(jobs)), function(i) {
   job <- jobs[i, ]
-  signs <- patterns[[job$data]][[job$recode]]
-  start <- proc.time()[["elapsed"]]
-  res <- run_regression(job$data, signs, job$method) |>
-    mutate(recode = job$recode, n_flipped = sum(signs < 0),
-           seconds = proc.time()[["elapsed"]] - start)
-  saveRDS(res, job$path)
+  save_job(job$path, {
+    signs <- patterns[[job$data]][[job$recode]]
+    start <- proc.time()[["elapsed"]]
+    res <- run_regression(job$data, signs, job$method) |>
+      mutate(recode = job$recode, n_flipped = sum(signs < 0),
+             seconds = proc.time()[["elapsed"]] - start)
+    res
+  })
   NULL
 }, mc.cores = cores, mc.preschedule = FALSE))

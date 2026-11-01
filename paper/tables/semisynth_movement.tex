@@ -1,0 +1,36 @@
+\begin{table}[p]
+\centering
+\small
+\caption{Coding movement in the known-effect pilot. Each learner-estimator pair uses all 20 matched draws under original and reversed continuous covariates, with common folds. Entries are absolute differences in dollars. The mean ATT movement has its Monte Carlo standard error in parentheses; maxima describe these draws and have no uncertainty interval. SE movement concerns empirical influence-function standard errors. Small nonzero numerical differences are retained. Agreement under recoding does not establish accuracy or correct interval coverage.}
+\label{tab:semisynth-movement}
+
+\begin{tabular}{llrrr}
+\toprule
+Learner & Estimator & Mean ATT (MCSE) & Max ATT & Max SE\\
+\midrule
+Oracle & Raw AIPW & 0 (0) & 0 & 0\\
+Oracle & Prepared AIPW & 0 (0) & 0 & 0\\
+Oracle & TMLE & 0 (0) & 0 & 0\\
+\addlinespace
+Anchored (0th) & Raw AIPW & 279.56 (52.17) & 793.90 & 225.02\\
+Anchored (0th) & Prepared AIPW & 319.64 (50.06) & 803.57 & 196.86\\
+Anchored (0th) & TMLE & 229.41 (48.87) & 737.17 & 207.85\\
+\addlinespace
+Canonical (0th) & Raw AIPW & 0 (0) & 0 & 0\\
+Canonical (0th) & Prepared AIPW & 0 (0) & 0 & 0\\
+Canonical (0th) & TMLE & 0 (0) & 0 & 0\\
+\addlinespace
+Symmetric (0th) & Raw AIPW & $1.52\times10^{-6}$ ($3.18\times10^{-7}$) & $5.08\times10^{-6}$ & $5.21\times10^{-7}$\\
+Symmetric (0th) & Prepared AIPW & $1.54\times10^{-6}$ ($2.78\times10^{-7}$) & $4.60\times10^{-6}$ & $4.04\times10^{-7}$\\
+Symmetric (0th) & TMLE & $1.35\times10^{-6}$ ($2.26\times10^{-7}$) & $4.39\times10^{-6}$ & $3.79\times10^{-7}$\\
+\addlinespace
+HAL package (1st) & Raw AIPW & 3349.04 (433.07) & 6711.99 & 8103.98\\
+HAL package (1st) & Prepared AIPW & 3249.12 (350.55) & 6055.90 & 7236.22\\
+HAL package (1st) & TMLE & 3019.70 (316.90) & 5953.86 & 3307.26\\
+\addlinespace
+Canonical (1st) & Raw AIPW & 0 (0) & 0 & 0\\
+Canonical (1st) & Prepared AIPW & 0 (0) & 0 & 0\\
+Canonical (1st) & TMLE & 0 (0) & 0 & 0\\
+\bottomrule
+\end{tabular}
+\end{table}

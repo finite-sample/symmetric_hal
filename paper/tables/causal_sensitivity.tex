@@ -1,0 +1,31 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{ATT TMLE sensitivity to nuisance components and outcome bounds.
+Each component row substitutes the reflected coding's indicated initial
+nuisance predictions into the original coding's predictions, then applies
+the same calibration and targeting. These are diagnostic combinations,
+not an additive decomposition of the full coding difference.
+Fixed-bound rows use the original or reflected nuisances with common
+outcome bounds of $[0,200000]$ dollars. All rows pass the convergence,
+score, and step-refinement checks.}
+\label{tab:causal-sensitivity}
+
+\begin{tabular}{llllrr}
+\toprule
+Study & $Q_0$ reversed & $Q_1$ reversed & $g$ reversed & ATT & SE\\
+\midrule
+Components & No & No & No & -3118 & 1060\\
+Components & Yes & No & No & -364 & 1318\\
+Components & No & Yes & No & -4347 & 2023\\
+Components & Yes & Yes & No & -1595 & 2400\\
+Components & No & No & Yes & 911 & 892\\
+\addlinespace
+Components & Yes & No & Yes & 1792 & 918\\
+Components & No & Yes & Yes & 851 & 858\\
+Components & Yes & Yes & Yes & 1747 & 901\\
+Fixed bounds & No & No & No & -3124 & 1064\\
+Fixed bounds & Yes & Yes & Yes & 1746 & 901\\
+\bottomrule
+\end{tabular}
+\end{table}

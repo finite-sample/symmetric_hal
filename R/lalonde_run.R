@@ -1,3 +1,4 @@
+source("R/runs.R")
 # Rscript R/lalonde_run.R <out_dir> <recodings> <cores> [methods]
 # LaLonde's test: the effect of NSW training on 1978 earnings for the
 # treated, estimated from the 185 Dehejia-Wahba trainees and the PSID-1
@@ -9,14 +10,16 @@ suppressMessages({
   library(tidyverse)
   library(Matrix)
 })
-for (f in c("basis", "nuisance", "att")) source(file.path("R", paste0(f, ".R")))
+for (f in c("basis", "fit", "nuisance", "att")) {
+  source(file.path("R", paste0(f, ".R")))
+}
 
 args <- commandArgs(trailingOnly = TRUE)
 out_dir <- args[1]
 n_recode <- as.integer(args[2])
 cores <- as.integer(args[3])
 methods <- if (length(args) > 3) strsplit(args[4], ",")[[1]] else
-  c("hal", "shal", "hal9001", "shal9001")
+  c("hal", "shal", "hal9001")
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 covariates <- c("age", "educ", "black", "hisp", "married", "nodegree",
@@ -35,19 +38,22 @@ patterns <- c(list(rep(1, length(covariates))),
                 sample(c(-1, 1), length(covariates), TRUE)
               }))
 jobs <- expand_grid(recode = seq_len(n_recode), method = methods) |>
-  mutate(path = file.path(out_dir, sprintf("%s_%02d.rds", method, recode))) |>
-  filter(!file.exists(path))
+  mutate(path = file.path(out_dir, sprintf("%s_%02d.rds", method, recode)))
+register_run(out_dir, jobs$path)
+jobs <- filter(jobs, !file.exists(path))
 cat(nrow(jobs), "estimates to run\n")
 
 invisible(parallel::mclapply(seq_len(nrow(jobs)), function(i) {
   job <- jobs[i, ]
-  signs <- patterns[[job$recode]]
-  start <- proc.time()[["elapsed"]]
-  res <- cross_fit_att(sweep(w0, 2, signs, `*`), a, y, job$method,
-                       folds$outer, folds$inner) |>
-    mutate(method = job$method, recode = job$recode,
-           flipped = paste(covariates[signs < 0], collapse = " "),
-           seconds = proc.time()[["elapsed"]] - start)
-  saveRDS(res, job$path)
+  save_job(job$path, {
+    signs <- patterns[[job$recode]]
+    start <- proc.time()[["elapsed"]]
+    res <- cross_fit_att(sweep(w0, 2, signs, `*`), a, y, job$method,
+                         folds$outer, folds$inner) |>
+      mutate(method = job$method, recode = job$recode,
+             flipped = paste(covariates[signs < 0], collapse = " "),
+             seconds = proc.time()[["elapsed"]] - start)
+    res
+  })
   NULL
 }, mc.cores = cores, mc.preschedule = FALSE))

@@ -1,0 +1,29 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{ATT estimates under information-preserving covariate recodings.
+Nuisance fits use first-order hal9001 defaults and common splits.
+Raw AIPW caps propensity scores at 0.99. Calibrated AIPW and TMLE share
+clipped outcome predictions and intercept-calibrated initial propensities.
+Intervals use the empirical influence-function standard error; their
+coverage is not established by this example. The different-units fits
+generated convergence warnings and are a software-default diagnostic.}
+\label{tab:causal}
+
+\begin{tabular}{llrrrr}
+\toprule
+Coding & Estimator & Estimate & SE & Lower 95\% & Upper 95\%\\
+\midrule
+Original & AIPW raw & 1181 & 3682 & -6035 & 8397\\
+Original & AIPW, calibrated & 594 & 3258 & -5791 & 6980\\
+Original & TMLE & -3118 & 1060 & -5194 & -1041\\
+Signs reversed & AIPW raw & 1845 & 1044 & -201 & 3891\\
+Signs reversed & AIPW, calibrated & 1761 & 927 & -56 & 3578\\
+\addlinespace
+Signs reversed & TMLE & 1747 & 901 & -19 & 3514\\
+Different units & AIPW raw & 47975 & 49796 & -49624 & 145574\\
+Different units & AIPW, calibrated & 37024 & 39031 & -39477 & 113525\\
+Different units & TMLE & -2434 & 13718 & -29321 & 24453\\
+\bottomrule
+\end{tabular}
+\end{table}

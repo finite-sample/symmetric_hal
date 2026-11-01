@@ -1,0 +1,32 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{Prediction risk in the fixed-knot mechanism comparison.
+The signal combines two boxes with conflicting preferred orientations;
+dimension is two, covariates are independent uniform, and SNR is two.
+Each row averages 20 training samples. Risk is integrated squared error;
+MCSE measures uncertainty over simulation draws. Fitting time includes
+tuning and refitting, excluding the study's additional reflection checks.
+Times are elapsed seconds under concurrent machine load, not isolated
+serial benchmarks.
+All methods use the same knots, penalty candidates, and folds.}
+\label{tab:pilot-fixed}
+
+\begin{tabular}{rlrrr}
+\toprule
+$n$ & Method & Mean risk & MCSE & Seconds\\
+\midrule
+100 & Anchored & 0.00899 & 0.00099 & 0.15\\
+100 & Selected anchor & 0.00937 & 0.00101 & 0.46\\
+100 & Anchor average & 0.00928 & 0.00112 & 0.47\\
+100 & Canonical orientation & 0.00962 & 0.00116 & 0.24\\
+100 & Symmetric & 0.00836 & 0.00124 & 0.19\\
+\addlinespace
+300 & Anchored & 0.00243 & 0.00024 & 0.17\\
+300 & Selected anchor & 0.00240 & 0.00021 & 0.54\\
+300 & Anchor average & 0.00233 & 0.00022 & 0.55\\
+300 & Canonical orientation & 0.00247 & 0.00023 & 0.24\\
+300 & Symmetric & 0.00252 & 0.00022 & 0.22\\
+\bottomrule
+\end{tabular}
+\end{table}

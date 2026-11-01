@@ -4,17 +4,10 @@ suppressMessages(library(tidyverse))
 source(file.path("R", "sim_setup.R"))
 args <- commandArgs(trailingOnly = TRUE)
 dir.create("data", showWarnings = FALSE)
-results <- list.files(args[1], pattern = "\\.rds$", full.names = TRUE) |>
-  map(readRDS)
+source("R/runs.R")
+results <- read_run(args[1])
 
-errored <- keep(results, \(r) !is.null(r$error))
-if (length(errored) > 0) {
-  cat(length(errored), "replicates errored:\n")
-  walk(errored, \(r) cat(" ", r$error, "\n"))
-}
-
-# Earlier tier-1 replicates also hold methods since dropped from the study.
-fits <- discard(results, \(r) !is.null(r$error)) |>
+fits <- results |>
   list_flatten() |>
   map(\(z) {
     as_tibble(z[setdiff(names(z), c("vars", "pred", "parent_cancelled"))])

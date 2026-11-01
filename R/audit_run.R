@@ -1,3 +1,4 @@
+source("R/runs.R")
 # Rscript R/audit_run.R <out_dir> <cores>
 # Which common regression estimators change when the covariates are recoded?
 # Boston housing, the 70/30 split and 10 CV folds of R/recode_run.R. Every
@@ -12,7 +13,7 @@ suppressMessages({
   library(tidyverse)
   library(Matrix)
 })
-for (f in c("basis", "nuisance")) source(file.path("R", paste0(f, ".R")))
+for (f in c("basis", "fit", "nuisance")) source(file.path("R", paste0(f, ".R")))
 
 args <- commandArgs(trailingOnly = TRUE)
 out_dir <- args[1]
@@ -106,7 +107,7 @@ fitters <- list(
     fit$yhat.test.mean
   }
 )
-for (m in c("hal", "shal", "hal9001", "shal9001", "shal9001_scaled")) {
+for (m in c("hal", "shal", "hal9001")) {
   fitters[[m]] <- local({
     method <- m
     \(tr, te, seed) {
@@ -118,24 +119,21 @@ for (m in c("hal", "shal", "hal9001", "shal9001", "shal9001_scaled")) {
 }
 
 jobs <- expand_grid(method = names(fitters), coding = names(codings)) |>
-  mutate(path = file.path(out_dir, sprintf("%s_%s.rds", method, coding))) |>
-  filter(!file.exists(path))
+  mutate(path = file.path(out_dir, sprintf("%s_%s.rds", method, coding)))
+register_run(out_dir, jobs$path)
+jobs <- filter(jobs, !file.exists(path))
 cat(nrow(jobs), "fits to run\n")
 
 invisible(parallel::mclapply(seq_len(nrow(jobs)), function(i) {
   job <- jobs[i, ]
-  d <- codings[[job$coding]](base)
-  seed <- if (job$coding == "reseed") 2 else 1
-  start <- proc.time()[["elapsed"]]
-  pred <- tryCatch(fitters[[job$method]](d[-test, ], d[test, ], seed),
-                   error = \(e) {
-                     message(job$method, " ", job$coding, ": ",
-                             conditionMessage(e))
-                     NA_real_
-                   })
-  tibble(method = job$method, coding = job$coding, row = test,
-         pred = as.vector(pred), y = base$y[test],
-         seconds = proc.time()[["elapsed"]] - start) |>
-    saveRDS(job$path)
+  save_job(job$path, {
+    d <- codings[[job$coding]](base)
+    seed <- if (job$coding == "reseed") 2 else 1
+    start <- proc.time()[["elapsed"]]
+    pred <- fitters[[job$method]](d[-test, ], d[test, ], seed)
+    tibble(method = job$method, coding = job$coding, row = test,
+           pred = as.vector(pred), y = base$y[test],
+           seconds = proc.time()[["elapsed"]] - start)
+  })
   NULL
 }, mc.cores = cores, mc.preschedule = FALSE))

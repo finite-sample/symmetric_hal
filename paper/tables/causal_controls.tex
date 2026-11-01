@@ -1,0 +1,31 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{Solver and scaling controls for the first-order nuisance
+learner. Estimates and empirical influence-function SEs are in dollars.
+Tighter fits use convergence threshold $10^{-12}$ and iteration limit
+$10^6$; standardization uses each outer training sample. All codings
+share observations, folds, and targeting settings. Every reported
+TMLE passes the score and step-refinement checks. Warnings count
+nuisance-fit messages: passing the targeting checks does not establish
+that every nuisance validation path completed.}
+\label{tab:causal-controls}
+
+\begin{tabular}{llrrr}
+\toprule
+Control & Coding & Estimate & SE & Warnings\\
+\midrule
+Tighter solver & Original & -2714 & 851 & 165\\
+Tighter solver & Signs reversed & 1715 & 883 & 35\\
+Tighter solver & Different units & -202 & 860 & 165\\
+\addlinespace
+Standardized & Original & -3570 & 19438 & 1\\
+Standardized & Signs reversed & 1418 & 958 & 0\\
+Standardized & Different units & -3570 & 19438 & 1\\
+\addlinespace
+Both controls & Original & -3539 & 19406 & 165\\
+Both controls & Signs reversed & 1413 & 957 & 104\\
+Both controls & Different units & -3539 & 19406 & 165\\
+\bottomrule
+\end{tabular}
+\end{table}

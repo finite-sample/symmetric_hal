@@ -1,0 +1,9 @@
+method,coding,mse
+anchored HAL,original,0.21827214397389033
+symmetric HAL,original,0.19748005589913598
+anchored HAL,x1 negated,0.19327718212897624
+symmetric HAL,x1 negated,0.19748005588564504
+anchored HAL,x2 negated,0.1921359124106399
+symmetric HAL,x2 negated,0.19748005588956946
+anchored HAL,both negated,0.1960508639050928
+symmetric HAL,both negated,0.1974800559289335

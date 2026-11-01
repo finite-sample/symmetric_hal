@@ -26,9 +26,7 @@ families <- tribble(
   "mars",               "MARS (earth)",              "Other",
   "hal",                "HAL, zero order",           "HAL",
   "shal",               "symmetric HAL, zero order", "HAL",
-  "hal9001",            "HAL, hal9001 defaults",     "HAL",
-  "shal9001",           "symmetric HAL, first order", "HAL",
-  "shal9001_scaled",    "symmetric HAL, first order, scaled", "HAL"
+  "hal9001",            "HAL, hal9001 defaults",     "HAL"
 )
 codings <- c(negated = "Negated", negated_from_max = "Max minus x",
              shifted = "Shifted", rescaled = "Units",
@@ -46,9 +44,9 @@ moves <- pred |>
             .by = c(method, coding))
 print(knitr::kable(moves |> arrange(method, coding), digits = 3))
 
-# Below 0.005 SD at every test point the change is solver tolerance.
+# Display small movements separately from numerical optimality checks.
 cell <- function(median, max) {
-  if_else(max < 0.005, "0", sprintf("%.2f (%.2f)", median, max))
+  if_else(max < 0.005, "<0.005", sprintf("%.2f (%.2f)", median, max))
 }
 rmse <- pred |>
   filter(coding == "original") |>
@@ -67,7 +65,7 @@ kbl(select(table, -family), format = "latex", booktabs = TRUE, digits = 2,
     col.names = c("Estimator", unname(codings), "Test RMSE"),
     caption = paste("Boston housing: median (and largest) change in a",
                     "test-set prediction when the covariates are recoded,",
-                    "in standard deviations of the outcome; 0 means under",
+                    "in standard deviations of the outcome; <0.005 means under",
                     "0.005 at every test point. Negated, max minus x,",
                     "shifted (by ten standard deviations) and units",
                     "(times 100, 0.01 or 12) recode all eleven continuous",

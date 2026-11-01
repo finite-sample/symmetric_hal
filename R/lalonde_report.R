@@ -10,7 +10,6 @@ dir.create("figures", showWarnings = FALSE)
 dir.create("paper/tables", showWarnings = FALSE)
 
 method_labels <- c(hal9001 = "HAL, hal9001 defaults",
-                   shal9001 = "symmetric HAL, first order",
                    hal = "HAL, zero order", shal = "symmetric HAL, zero order")
 experiment <- read_csv("data/lalonde_dw.csv", show_col_types = FALSE) |>
   filter(group %in% c("treated", "experimental")) |>
@@ -20,7 +19,7 @@ experiment <- read_csv("data/lalonde_dw.csv", show_col_types = FALSE) |>
 cat(sprintf("experimental benchmark: %.0f (SE %.0f)\n", experiment$att,
             experiment$se))
 
-# The random sign patterns can repeat (two of 20 did); count each coding once.
+# Count each distinct sign coding once.
 att <- read_csv("data/lalonde_att.csv", show_col_types = FALSE) |>
   distinct(method, flipped, .keep_all = TRUE) |>
   mutate(method = factor(method_labels[method], method_labels))
@@ -82,9 +81,7 @@ for (ext in c("pdf", "png")) {
 units_labels <- c(original = "Original units",
                   months_thousands = "Age in months, earnings in thousands")
 units <- read_csv("data/lalonde_units.csv", show_col_types = FALSE) |>
-  mutate(method = factor(c(method_labels,
-                           shal9001_scaled = paste("symmetric HAL, first",
-                                                   "order, scaled"))[method]),
+  mutate(method = factor(method_labels[method], method_labels),
          units = units_labels[units],
          estimate = sprintf("%s (%s)", scales::comma(att, 1),
                             scales::comma(se, 1))) |>
@@ -100,7 +97,6 @@ kbl(units, format = "latex", booktabs = TRUE, linesep = "",
                     "with the covariates in their original",
                     "units and with age in months and 1974 and 1975 earnings",
                     "in thousands of dollars (standard errors in",
-                    "parentheses). Scaled divides each covariate by its",
-                    "standard deviation before forming the hinges.")) |>
+                    "parentheses).")) |>
   kable_styling(latex_options = "hold_position") |>
   save_kable("paper/tables/lalonde_units.tex")

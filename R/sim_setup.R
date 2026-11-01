@@ -1,6 +1,5 @@
 # Truths on x ~ U(-1, 1)^d. Cut points sit at -0.4, 0 and 0.4, which are
-# near (not exactly on) the 9-knot sample-quantile grid, so every HAL
-# variant carries the same small approximation error and CART does not.
+# represented approximately on the training-quantile knot grid.
 # All truths need interactions of at most two variables.
 box <- function(x, j, l, sides) {
   side <- function(v, s) {
@@ -65,24 +64,22 @@ signal_var <- function(truth, d, rho) {
   var(truths[[truth]](draw_x(2e5, d, rho)))
 }
 
-methods_all <- c("cart", "hal", "hal_relaxed", "shal", "shal_relaxed", "rf")
+methods_all <- c("cart", "hal", "shal", "rf")
 
-fit_method <- function(method, x, y, dicts) {
+fit_method <- function(method, x, y, foldid, num_knots) {
+  lambda <- max(stats::sd(y), 1e-8) * c(0.003, 0.01, 0.03, 0.1)
   switch(method,
     cart = fit_cart(x, y),
     rf = fit_rf(x, y),
-    hal = fit_lasso(dicts$a$design, y, dicts$a$features),
-    hal_relaxed = fit_lasso(dicts$a$design, y, dicts$a$features,
-                            relax = TRUE),
-    shal = fit_lasso(dicts$s$design, y, dicts$s$features),
-    shal_relaxed = fit_lasso(dicts$s$design, y, dicts$s$features,
-                             relax = TRUE)
+    hal = cv_hal(x, y, lambda, foldid, num_knots, symmetric = FALSE),
+    shal = cv_hal(x, y, lambda, foldid, num_knots, symmetric = TRUE),
+    stop("unknown method: ", method)
   )
 }
 
 # Variables used and distinct (variable, cut) splits used, comparable
 # across trees and dictionary fits.
-fit_structure <- function(method, fit, dicts, x_names) {
+fit_structure <- function(method, fit, x_names) {
   if (method == "cart") {
     frame <- fit$tree$frame
     internal <- frame$var != "<leaf>"
@@ -93,8 +90,7 @@ fit_structure <- function(method, fit, dicts, x_names) {
   if (is.null(fit$beta)) {
     return(list(vars = NA, n_splits = NA, n_coef = NA))
   }
-  f <- if (method %in% c("hal", "hal_relaxed")) dicts$a$features else
-    dicts$s$features
+  f <- fit$features
   act <- f[fit$beta != 0, ]
   splits <- unique(c(paste(act$j, act$u),
                      paste(act$l, act$v)[!is.na(act$l)]))
@@ -103,31 +99,23 @@ fit_structure <- function(method, fit, dicts, x_names) {
 }
 
 run_replicate <- function(truth, snr, rep, n, d, rho, test_x, methods,
-                          num_knots = 9) {
+                          num_knots = 3) {
   sigma <- sqrt(signal_var(truth, d, rho) / snr)
   set.seed(rep * 7919 + match(truth, names(truths)) * 101 +
              round(log(snr) * 1000) + n + round(rho * 10))
   x <- draw_x(n, d, rho)
   y <- truths[[truth]](x) + rnorm(n, sd = sigma)
-  dicts <- list()
-  if (any(grepl("^hal", methods))) {
-    fa <- make_dictionary(x, num_knots, FALSE)
-    dicts$a <- list(features = fa, design = design_matrix(x, fa))
-  }
-  if (any(grepl("shal", methods))) {
-    fs <- make_dictionary(x, num_knots, TRUE)
-    dicts$s <- list(features = fs, design = design_matrix(x, fs))
-  }
+  foldid <- sample(rep_len(1:5, n))
   f_test <- truths[[truth]](test_x)
   null_risk <- mean((f_test - mean(f_test))^2)
   lapply(methods, function(method) {
     start <- proc.time()[["elapsed"]]
-    fit <- fit_method(method, x, y, dicts)
+    fit <- fit_method(method, x, y, foldid, num_knots)
     seconds <- proc.time()[["elapsed"]] - start
     pred <- fit$predict(test_x)
     stopifnot(all(is.finite(pred)))
     risk <- mean((pred - f_test)^2)
-    st <- fit_structure(method, fit, dicts, colnames(x))
+    st <- fit_structure(method, fit, colnames(x))
     tv <- true_vars[[truth]]
     sel <- st$vars
     tp <- length(intersect(sel, tv))

@@ -8,7 +8,8 @@ suppressMessages({
 dir.create("paper/tables", showWarnings = FALSE)
 
 pred <- read_csv("data/recode_predictions.csv", show_col_types = FALSE) |>
-  mutate(method = recode(method, hal = "HAL", shal = "symmetric HAL")) |>
+  mutate(method = recode(method, hal = "HAL, zero order",
+                         shal = "symmetric HAL")) |>
   mutate(data = recode(data, boston = "Boston", ozone = "Ozone"))
 
 spread <- pred |>
@@ -38,5 +39,5 @@ kbl(prediction_table, format = "latex", booktabs = TRUE, digits = 3,
                     "rows. Mean SD and max",
                     "range are per test point, in units of the outcome's",
                     "standard deviation.")) |>
-  kable_styling(latex_options = "hold_position") |>
+  kable_styling(latex_options = c("scale_down", "hold_position")) |>
   save_kable("paper/tables/recode_predictions.tex")

@@ -10,9 +10,8 @@ tag <- commandArgs(trailingOnly = TRUE)[1]
 dir.create("figures", showWarnings = FALSE)
 dir.create("paper/tables", showWarnings = FALSE)
 
-method_labels <- c(cart = "CART", hal = "HAL", hal_relaxed = "relaxed HAL",
-                   shal = "symmetric HAL",
-                   shal_relaxed = "relaxed symmetric HAL", rf = "random forest")
+method_labels <- c(cart = "CART", hal = "anchored HAL",
+                   shal = "symmetric HAL", rf = "random forest")
 truth_labels <- c(tree = "tree", additive = "additive steps", xor = "XOR",
                   box_upper = "upper box", box_mixed = "mixed box",
                   box_lower = "lower box", box_interior = "interior box",
@@ -70,7 +69,8 @@ median_ratio <- function(d) {
 orientation <- paired("shal", "hal")
 p <- ggplot(orientation, aes(factor(snr), log_ratio)) +
   geom_hline(yintercept = 0, linetype = 2) +
-  geom_jitter(width = 0.2, size = 0.4, alpha = 0.4) +
+  geom_point(position = position_jitter(width = 0.2, seed = 1),
+             size = 0.4, alpha = 0.4) +
   stat_summary(fun = median, geom = "point", colour = "red", size = 1.5) +
   facet_wrap(~truth, labeller = as_labeller(truth_labels)) +
   labs(x = "signal-to-noise ratio",
@@ -84,7 +84,7 @@ orientation |>
   pivot_wider(names_from = snr, values_from = symmetric_wins) |>
   knitr::kable(digits = 2, caption = "share of replicates shal wins") |>
   print()
-for (cmp in list(c("shal_relaxed", "hal_relaxed"), c("cart", "shal_relaxed"))) {
+for (cmp in list(c("cart", "shal"), c("rf", "shal"))) {
   paired(cmp[1], cmp[2]) |>
     median_ratio() |>
     knitr::kable(digits = 2, caption = paste(cmp, collapse = " / ")) |>
@@ -101,7 +101,8 @@ kbl(ratio, format = "latex", booktabs = TRUE, digits = 2, linesep = "",
     label = paste0(tag, "_ratio"),
     caption = paste("Risk of symmetric HAL relative to HAL, by true function",
                     "(rows) and signal-to-noise ratio (columns): the median",
-                    "over 50 replicates of the within-replicate ratio. Below",
+                    "of the within-replicate ratio over collected replicates.",
+                    "Below",
                     "1, symmetric HAL is better.")) |>
   kable_styling(latex_options = "hold_position") |>
   add_header_above(c(" " = 1, "signal-to-noise ratio" = ncol(ratio) - 1)) |>

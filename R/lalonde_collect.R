@@ -4,7 +4,7 @@
 suppressMessages(library(tidyverse))
 args <- commandArgs(trailingOnly = TRUE)
 out <- if (length(args) > 1) args[2] else "data/lalonde_att.csv"
-list.files(args[1], pattern = "\\.rds$", full.names = TRUE) |>
-  map(readRDS) |>
+source("R/runs.R")
+read_run(args[1]) |>
   list_rbind() |>
   write_csv(out)

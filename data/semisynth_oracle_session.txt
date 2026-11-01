@@ -1,0 +1,28 @@
+                           R/att.R                      R/semisynth.R
+"ae69ee0f823dccdb7ed7fe26873a28d8" "1f88a76f2d88b544edea1a8f1d7cf526"
+              R/semisynth_oracle.R                data/lalonde_dw.csv
+"057c6b23f1d1a858a5a3a7ae22859215" "aba770ca0b3a2d95cdb41a45d51522da"
+R version 4.6.0 (2026-04-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS 27.0.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: America/Los_Angeles
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+ [1] R6_2.6.1         tidyselect_1.2.1 bit_4.6.0        tzdb_0.5.0
+ [5] magrittr_2.0.5   splines_4.6.0    glue_1.8.1       tibble_3.3.1
+ [9] parallel_4.6.0   pkgconfig_2.0.3  bit64_4.8.6      lifecycle_1.0.5
+[13] readr_2.2.0      cli_3.6.6        vctrs_0.7.3      compiler_4.6.0
+[17] tools_4.6.0      hms_1.1.4        pillar_1.11.1    crayon_1.5.3
+[21] rlang_1.3.0      vroom_1.7.1

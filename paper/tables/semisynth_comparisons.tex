@@ -1,0 +1,27 @@
+\begin{table}[p]
+\centering
+\small
+\caption{Paired accuracy comparisons in the known-effect pilot. Each ratio is the RMSE of the numerator learner divided by that of the denominator, using all 20 common draws. Values below one favor the numerator. Brackets give pointwise approximate 95\% Monte Carlo intervals from paired squared errors, using a delta-method log-ratio standard error and a $t_{19}$ critical value. These exploratory intervals are not multiplicity-adjusted and do not describe uncertainty about the ATT. An unavailable ratio (--) indicates zero reference RMSE; an unavailable interval [--] indicates zero numerator RMSE.}
+\label{tab:semisynth-comparisons}
+
+\begin{tabular}{llrr}
+\toprule
+RMSE numerator / denominator & Estimator & Original [CI] & Reversed [CI]\\
+\midrule
+1st: canonical / package & Raw AIPW & 1.35 [0.80, 2.27] & 1.48 [0.96, 2.29]\\
+0th: canonical / anchored & Raw AIPW & 1.28 [1.10, 1.48] & 1.38 [1.15, 1.65]\\
+0th: symmetric / anchored & Raw AIPW & 0.97 [0.90, 1.03] & 1.04 [0.97, 1.12]\\
+0th: symmetric / canonical & Raw AIPW & 0.76 [0.65, 0.88] & 0.76 [0.65, 0.88]\\
+\addlinespace
+1st: canonical / package & Prepared AIPW & 1.15 [0.75, 1.78] & 1.40 [0.92, 2.12]\\
+0th: canonical / anchored & Prepared AIPW & 1.26 [1.11, 1.43] & 1.41 [1.19, 1.66]\\
+0th: symmetric / anchored & Prepared AIPW & 0.98 [0.93, 1.04] & 1.10 [1.02, 1.18]\\
+0th: symmetric / canonical & Prepared AIPW & 0.78 [0.68, 0.89] & 0.78 [0.68, 0.89]\\
+\addlinespace
+1st: canonical / package & TMLE & 0.56 [0.39, 0.81] & 0.60 [0.41, 0.89]\\
+0th: canonical / anchored & TMLE & 1.34 [1.14, 1.56] & 1.36 [1.13, 1.64]\\
+0th: symmetric / anchored & TMLE & 1.01 [0.93, 1.09] & 1.03 [0.95, 1.11]\\
+0th: symmetric / canonical & TMLE & 0.75 [0.65, 0.87] & 0.75 [0.65, 0.87]\\
+\bottomrule
+\end{tabular}
+\end{table}

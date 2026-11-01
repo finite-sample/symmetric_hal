@@ -1,0 +1,36 @@
+                           R/att.R                         R/causal.R
+"e99bed1331a336a751502882a73f4fac" "d4bfc773e48748a3c7f7473bf3b7e4fa"
+                 R/causal_report.R           data/causal_nuisance.csv
+"8f5f7196d508d7201b8152432b9dfbdf" "15285e8acc4b1591cb201a53704ea3a9"
+R version 4.6.0 (2026-04-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS 27.0.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: America/Los_Angeles
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+ [1] crayon_1.5.3        vctrs_0.7.3         knitr_1.52
+ [4] cli_3.6.6           xfun_0.61           rlang_1.3.0
+ [7] otel_0.2.0          tmle_2.1.1          SuperLearner_2.0-42
+[10] bit_4.6.0           glue_1.8.1          glmnet_5.0
+[13] hms_1.1.4           grid_4.6.0          evaluate_1.0.5
+[16] tibble_3.3.1        tzdb_0.5.0          foreach_1.5.2
+[19] lifecycle_1.0.5     compiler_4.6.0      codetools_0.2-20
+[22] Rcpp_1.1.2          pkgconfig_2.0.3     lattice_0.22-9
+[25] R6_2.6.1            tidyselect_1.2.1    readr_2.2.0
+[28] parallel_4.6.0      vroom_1.7.1         pillar_1.11.1
+[31] splines_4.6.0       shape_1.4.6.1       gam_1.22-7
+[34] magrittr_2.0.5      Matrix_1.7-5        bit64_4.8.6
+[37] tools_4.6.0         nnls_1.6            iterators_1.0.14
+[40] survival_3.8-6

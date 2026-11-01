@@ -38,7 +38,7 @@ min_l1 <- function(features, target) {
 }
 
 # Symmetric: 2^t. Anchored: 2^(t+k) - 1{m = t = 0}.
-test_that("Prop 1: box penalties match the closed forms", {
+test_that("box penalties match the closed forms", {
   grid <- c(0.2, 0.4, 0.6, 0.8)
   mids <- c(0.1, 0.3, 0.5, 0.7, 0.9)
   x <- as.matrix(expand.grid(mids, mids, mids))
@@ -95,4 +95,70 @@ test_that("Thm 1: oracle inequality holds under its lambda condition", {
   rhs <- mean(pc(cbind(1, design) %*% c(ls$coefficients[1], beta) - fstar)^2) +
     3 * lambda * sum(abs(beta))
   expect_lte(lhs, rhs)
+})
+
+test_that("finite-knot risk bounds retain unrepresented box error", {
+  x <- matrix(0:2, ncol = 1)
+  truth <- c(0, 0, 1)
+  lambda <- 0.01
+  for (symmetric in c(FALSE, TRUE)) {
+    fit <- fit_hal(x, truth, lambda, symmetric = symmetric, knots = list(0.5))
+    design <- as.matrix(design_matrix(x, fit$features))
+    expect_identical(design[2, ], design[3, ])
+    approximation <- c(0, 0.5, 0.5)
+    approximation_error <- mean((approximation - truth)^2)
+    expect_equal(approximation_error, 1 / 6)
+    error <- fit$fitted - truth
+    risk <- mean((error - mean(error))^2)
+    expect_gte(risk, approximation_error)
+    expect_gt(risk, 3 * lambda)
+    expect_lte(risk, approximation_error + 3 * lambda * 0.5)
+  }
+})
+
+test_that("box costs count observable faces and handle constants", {
+  grid <- 0:3
+  x <- as.matrix(expand.grid(grid, grid))
+  anchored <- full_dictionary(x, grid, FALSE, 2)
+  symmetric <- full_dictionary(x, grid, TRUE, 2)
+  intervals <- subset(expand.grid(a = grid, b = grid), a <= b)
+  for (i in seq_len(nrow(intervals))) {
+    for (j in seq_len(nrow(intervals))) {
+      bounds <- intervals[c(i, j), ]
+      a <- bounds$a
+      b <- bounds$b
+      target <- as.numeric(x[, 1] >= a[1] & x[, 1] <= b[1] &
+                             x[, 2] >= a[2] & x[, 2] <= b[2])
+      upper <- sum(a > min(grid) & b == max(grid))
+      lower <- sum(a == min(grid) & b < max(grid))
+      two <- sum(a > min(grid) & b < max(grid))
+      active <- upper + lower + two
+      expected_a <- if (active == 0) {
+        0
+      } else {
+        2^(two + lower) - (upper == 0 && two == 0)
+      }
+      expected_s <- if (active == 0) 0 else 2^two
+      expect_equal(min_l1(anchored, target), expected_a, tolerance = 1e-8)
+      expect_equal(min_l1(symmetric, target), expected_s, tolerance = 1e-8)
+    }
+  }
+})
+
+test_that("mixing orientations can beat every global anchor", {
+  grid <- 0:3
+  x <- as.matrix(expand.grid(grid, grid))
+  target <- as.numeric(x[, 1] <= 1 & x[, 2] <= 1) +
+    as.numeric(x[, 1] >= 3 & x[, 2] >= 3)
+  symmetric <- full_dictionary(x, grid, TRUE, 2)
+  expect_equal(min_l1(symmetric, target), 2)
+  for (s1 in c(-1, 1)) {
+    for (s2 in c(-1, 1)) {
+      reflected <- x
+      if (s1 == -1) reflected[, 1] <- 3 - reflected[, 1]
+      if (s2 == -1) reflected[, 2] <- 3 - reflected[, 2]
+      anchored <- full_dictionary(reflected, grid, FALSE, 2)
+      expect_equal(min_l1(anchored, target), 4)
+    }
+  }
 })

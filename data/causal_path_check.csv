@@ -1,0 +1,2 @@
+outer_fold,component,inner_fold,selected_lambda,master_jerr,master_normalized_kkt,master_scaled_intercept,master_prediction_movement,original_inner_jerr,original_inner_last_lambda,extended_inner_jerr,extended_inner_last_lambda,clamp_movement,extended_prediction_movement,original_validation_mse,extended_validation_mse
+1,q1,4,1450897105.1801136,0,9.209627725934532e-7,1.6875823503453394e-16,1.7732418200466782e-8,-41,1786958461.6880467,0,1231681152.3001146,0,676.8876703324622,23811520.461736493,24017513.609749638

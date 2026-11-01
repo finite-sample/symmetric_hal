@@ -11,15 +11,16 @@ test_that("design columns equal hand-computed oriented indicator products", {
   expect_equal(unname(design), unname(by_hand))
 })
 
-test_that("no constant or duplicate columns", {
-  x <- toy_x()
-  for (sym in c(FALSE, TRUE)) {
-    f <- make_dictionary(x, 4, sym)
-    design <- design_matrix(x, f)
-    share <- Matrix::colMeans(design)
-    expect_true(all(share > 0 & share < 1))
-    expect_false(anyDuplicated(column_keys(design)) > 0)
-  }
+test_that("functions with identical training columns remain available", {
+  x <- cbind(1:21, 1:21)
+  f <- make_dictionary(x, 3, TRUE)
+  expect_equal(nrow(f), 2 * 2 * 3 + 4 * 3^2)
+  training <- as.matrix(design_matrix(x, f))
+  heldout <- as.matrix(design_matrix(rbind(c(1, 21), c(21, 1)), f))
+  first <- which(is.na(f$l) & f$j == 1 & f$u == 11 & f$oj == 1)
+  second <- which(is.na(f$l) & f$j == 2 & f$u == 11 & f$oj == 1)
+  expect_equal(training[, first], training[, second])
+  expect_false(identical(heldout[, first], heldout[, second]))
 })
 
 # Columns are compared up to complement: with a free intercept 1 - phi and
@@ -50,4 +51,28 @@ test_that("the anchored dictionary is a subset of the symmetric one", {
   s <- make_dictionary(x, 4, TRUE)
   key <- function(f) paste(f$j, f$l, f$u, f$v, f$oj, f$ol)
   expect_true(all(key(a) %in% key(s)))
+})
+
+test_that("closed discrete indicators can enlarge the prediction space", {
+  x <- as.matrix(expand.grid(x1 = (0:4) / 4, x2 = (0:4) / 4))
+  knots <- rep(list(c(0.25, 0.5, 0.75)), 2)
+  design <- function(x, knots, symmetric) {
+    cbind(1, as.matrix(design_matrix(
+      x, dictionary_features(knots, symmetric)
+    )))
+  }
+  anchored <- design(x, knots, FALSE)
+  symmetric <- design(x, knots, TRUE)
+  expect_equal(qr(anchored)$rank, 16)
+  expect_equal(qr(symmetric)$rank, 25)
+  expect_equal(anchored[x[, 1] == 0.75, ], anchored[x[, 1] == 1, ])
+  expect_false(identical(symmetric[x[, 1] == 0.75, ],
+                         symmetric[x[, 1] == 1, ]))
+  duplicate <- cbind(x, x[, 2])
+  knots <- rep(knots[1], 3)
+  expect_equal(qr(design(duplicate, knots, FALSE))$rank, 16)
+  duplicate[, 3] <- -duplicate[, 3]
+  knots[[3]] <- -knots[[3]]
+  expect_equal(qr(design(duplicate, knots, FALSE))$rank, 20)
+  expect_equal(qr(design(duplicate, knots, TRUE))$rank, 25)
 })

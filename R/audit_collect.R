@@ -3,9 +3,8 @@
 # one row per estimator x coding x test point.
 suppressMessages(library(tidyverse))
 dir.create("data", showWarnings = FALSE)
-list.files(commandArgs(trailingOnly = TRUE)[1], pattern = "\\.rds$",
-           full.names = TRUE) |>
-  map(readRDS) |>
+source("R/runs.R")
+read_run(commandArgs(trailingOnly = TRUE)[1]) |>
   list_rbind() |>
   select(-seconds) |>
   write_csv("data/audit_predictions.csv")

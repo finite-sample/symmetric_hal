@@ -1,0 +1,23 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{Exact AIPW changes relative to the original coding, in dollars.
+The $q$ and $g$ terms in equation~\eqref{eq:aipw-change} change the
+propensity first, then the outcome regression; they sum to $\Delta$ATT.
+Reversing that order reallocates the interaction, so these are not unique
+attributions. The bound is $B_q+B_g$. Calibrated rows use the effective
+prepared predictions. Different-units nuisance fits report convergence
+warnings. These calculations do not decompose TMLE movement.}
+\label{tab:causal-contrast}
+
+\begin{tabular}{llrrrrr}
+\toprule
+Coding & AIPW & $q$ term & $g$ term & $\Delta$ATT & Bound & $\Delta$SE\\
+\midrule
+Signs reversed & Raw & 162 & 502 & 664 & 28152 & -2638\\
+Signs reversed & Calibrated & 1066 & 101 & 1167 & 24812 & -2331\\
+Different units & Raw & 46310 & 484 & 46794 & 74698 & 46114\\
+Different units & Calibrated & 36525 & -96 & 36429 & 60036 & 35773\\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,38 @@
+               causal_path_check.R                     lalonde_dw.csv
+"32e15af00421b12fa1d0418da0cb6365" "aba770ca0b3a2d95cdb41a45d51522da"
+        hal9001_tight_original.rds
+"bcaf1a13ad8f757a2e42bdfef82be9a8"
+from glmnet C++ code (error code -41); Convergence for 41th lambda value not reached after maxit=1000000 iterations; solutions for larger lambdas returned
+R version 4.6.0 (2026-04-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS 27.0.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: America/Los_Angeles
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+ [1] bit_4.6.0           Matrix_1.7-5        glmnet_5.0
+ [4] future.apply_1.20.2 crayon_1.5.3        compiler_4.6.0
+ [7] tidyselect_1.2.1    Rcpp_1.1.2          stringr_1.6.0
+[10] parallel_4.6.0      assertthat_0.2.1    globals_0.19.1
+[13] splines_4.6.0       lattice_0.22-9      readr_2.2.0
+[16] R6_2.6.1            shape_1.4.6.1       iterators_1.0.14
+[19] origami_1.0.8       future_1.75.0       tibble_3.3.1
+[22] hal9001_0.4.6       pillar_1.11.1       tzdb_0.5.0
+[25] rlang_1.3.0         stringi_1.8.9       bit64_4.8.6
+[28] cli_3.6.6           magrittr_2.0.5      digest_0.6.39
+[31] foreach_1.5.2       grid_4.6.0          vroom_1.7.1
+[34] hms_1.1.4           lifecycle_1.0.5     vctrs_0.7.3
+[37] glue_1.8.1          data.table_1.18.4   listenv_1.0.0
+[40] codetools_0.2-20    survival_3.8-6      abind_1.4-8
+[43] parallelly_1.48.0   tools_4.6.0         pkgconfig_2.0.3

@@ -1,0 +1,30 @@
+\begin{table}[p]
+\centering
+\small
+\caption{Prepared AIPW accuracy in the known-effect pilot. Each row uses the same 20 draws of 2675 observations from the fixed empirical-covariate population; the ATT is 1800 dollars. Bias and RMSE are in thousands of dollars, with Monte Carlo standard errors in parentheses (delta method for RMSE). Coverage is the percentage of nominal 95\% intervals containing the ATT, with an exact 95\% binomial interval in brackets. Warnings count draws with any nuisance-fit warning; these draws are retained. Oracle denotes true initial nuisances; preparation changes them for prepared AIPW and TMLE. Reversed negates continuous covariates using the same draws and folds. 0th and 1st denote basis order. Twenty draws do not establish calibrated coverage. A missing RMSE MCSE (--) indicates zero empirical RMSE.}
+\label{tab:semisynth-aipw}
+
+\begin{tabular}{llrrrr}
+\toprule
+Learner & Coding & Bias (MCSE) & RMSE (MCSE) & Coverage [CI] & Warnings\\
+\midrule
+Oracle & Original & 1.23 (0.45) & 2.31 (0.42) & 90 [68, 99] & 0\\
+Oracle & Reversed & 1.23 (0.45) & 2.31 (0.42) & 90 [68, 99] & 0\\
+\addlinespace
+Anchored (0th) & Original & -1.30 (0.25) & 1.70 (0.20) & 75 [51, 91] & 0\\
+Anchored (0th) & Reversed & -1.01 (0.26) & 1.52 (0.20) & 80 [56, 94] & 0\\
+\addlinespace
+Canonical (0th) & Original & -1.89 (0.23) & 2.14 (0.20) & 60 [36, 81] & 0\\
+Canonical (0th) & Reversed & -1.89 (0.23) & 2.14 (0.20) & 60 [36, 81] & 0\\
+\addlinespace
+Symmetric (0th) & Original & -1.27 (0.25) & 1.67 (0.21) & 75 [51, 91] & 0\\
+Symmetric (0th) & Reversed & -1.27 (0.25) & 1.67 (0.21) & 75 [51, 91] & 0\\
+\addlinespace
+HAL package (1st) & Original & -1.63 (0.47) & 2.60 (0.35) & 50 [27, 73] & 6\\
+HAL package (1st) & Reversed & 1.09 (0.42) & 2.14 (0.37) & 90 [68, 99] & 0\\
+\addlinespace
+Canonical (1st) & Original & 0.53 (0.68) & 3.00 (0.42) & 95 [75, 100] & 8\\
+Canonical (1st) & Reversed & 0.53 (0.68) & 3.00 (0.42) & 95 [75, 100] & 8\\
+\bottomrule
+\end{tabular}
+\end{table}

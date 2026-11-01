@@ -1,0 +1,21 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{ATT TMLE after standardization and canonical orientation
+of the first-order nuisance learner. Preprocessing uses each outer
+training sample; ambiguous orientations are averaged after separate
+package-default tuning. All codings use common folds and targeting
+settings. Warnings count nuisance-fit messages and are retained even
+when predictions agree. SEs are empirical influence-function SEs.}
+\label{tab:causal-canonical}
+
+\begin{tabular}{lrrr}
+\toprule
+Coding & Estimate & SE & Warnings\\
+\midrule
+Original & 699 & 1096 & 3\\
+Signs reversed & 699 & 1096 & 3\\
+Different units & 699 & 1096 & 3\\
+\bottomrule
+\end{tabular}
+\end{table}

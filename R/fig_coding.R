@@ -8,13 +8,14 @@ suppressMessages({
   library(Matrix)
 })
 source(file.path("R", "basis.R"))
+source(file.path("R", "fit.R"))
 
 set.seed(7)
-n <- 500
+n <- 120
 truth <- function(x) 2 * (x[, 1] <= -0.2 & x[, 2] <= -0.2)
 x <- matrix(runif(2 * n, -1, 1), n, 2, dimnames = list(NULL, c("x1", "x2")))
-y <- truth(x) + rnorm(n, sd = 1.2)
-foldid <- sample(rep_len(1:10, n))
+y <- truth(x) + rnorm(n, sd = 0.6)
+foldid <- sample(rep_len(1:5, n))
 grid <- as.matrix(expand_grid(x1 = seq(-1, 1, length.out = 121),
                               x2 = seq(-1, 1, length.out = 121)))
 
@@ -23,18 +24,16 @@ codings <- list("original" = c(1, 1), "x1 negated" = c(-1, 1),
 
 fit_on_grid <- function(signs, symmetric) {
   xs <- sweep(x, 2, signs, `*`)
-  f <- make_dictionary(xs, 19, symmetric)
-  cv <- glmnet::cv.glmnet(design_matrix(xs, f), y, standardize = FALSE,
-                          foldid = foldid, control = list(thresh = 1e-12))
-  as.vector(predict(cv, design_matrix(sweep(grid, 2, signs, `*`), f),
-                    s = "lambda.min"))
+  fit <- cv_hal(xs, y, c(0.01, 0.03, 0.1), foldid,
+                num_knots = 3, symmetric = symmetric)
+  fit$predict(sweep(grid, 2, signs, `*`))
 }
 
 fits <- expand_grid(coding = names(codings), symmetric = c(FALSE, TRUE)) |>
   mutate(fit = map2(coding, symmetric, \(k, s) {
     mutate(as_tibble(grid), fhat = fit_on_grid(codings[[k]], s))
   })) |>
-  mutate(method = if_else(symmetric, "symmetric HAL", "HAL"),
+  mutate(method = if_else(symmetric, "symmetric HAL", "anchored HAL"),
          coding = fct_relevel(coding, names(codings))) |>
   unnest(fit) |>
   mutate(f = truth(cbind(x1, x2)))
@@ -43,6 +42,16 @@ risk <- fits |>
   summarise(label = sprintf("error %.3f", mean((fhat - f)^2)),
             .by = c(method, coding))
 print(risk)
+summary <- fits |>
+  summarise(mse = mean((fhat - f)^2), .by = c(method, coding))
+write_csv(summary, "data/coding_example.csv")
+symmetric_predictions <- fits |>
+  filter(symmetric) |>
+  select(x1, x2, coding, fhat) |>
+  pivot_wider(names_from = coding, values_from = fhat)
+predictions <- as.matrix(symmetric_predictions[, -(1:2)])
+stopifnot(max(abs(predictions - predictions[, 1])) < 1e-6)
+dir.create("figures", showWarnings = FALSE)
 
 p <- ggplot(fits, aes(x1, x2)) +
   geom_raster(aes(fill = fhat - f)) +
@@ -52,7 +61,7 @@ p <- ggplot(fits, aes(x1, x2)) +
              hjust = 1, size = 2.6, linewidth = 0) +
   facet_grid(method ~ coding) +
   scale_fill_distiller("fitted minus\ntrue value", palette = "RdBu",
-                       limits = c(-1, 1), oob = scales::squish) +
+                       limits = c(-1, 1) * max(abs(fits$fhat - fits$f))) +
   scale_x_continuous(breaks = c(-0.5, 0, 0.5)) +
   scale_y_continuous(breaks = c(-0.5, 0, 0.5)) +
   coord_equal(expand = FALSE) +

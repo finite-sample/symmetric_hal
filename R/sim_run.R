@@ -1,3 +1,4 @@
+source("R/runs.R")
 # Rscript R/sim_run.R <design> <reps> <out_dir> <cores>
 # Each replicate is saved as soon as it finishes, so an interrupted run
 # resumes where it stopped; a replicate that errors is saved with its error.
@@ -42,9 +43,11 @@ path_of <- function(g) {
   file.path(out_dir, sprintf("%s_snr%s_n%d_rho%s_rep%03d.rds", g$truth,
                              g$snr, g$n, g$rho, g$rep))
 }
-todo <- which(!file.exists(vapply(seq_len(nrow(grid)), function(i) {
+paths <- vapply(seq_len(nrow(grid)), function(i) {
   path_of(grid[i, ])
-}, character(1))))
+}, character(1))
+register_run(out_dir, paths)
+todo <- which(!file.exists(paths))
 cat(length(todo), "of", nrow(grid), "replicates to run\n")
 
 invisible(parallel::mclapply(todo, function(i) {

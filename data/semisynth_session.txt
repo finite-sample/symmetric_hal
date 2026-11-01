@@ -1,0 +1,190 @@
+$results_semisynth_pilot
+$results_semisynth_pilot$inputs
+                       R/anchors.R                            R/att.R
+"3c6a0a638158e3671201e2dc30fb823a" "ae69ee0f823dccdb7ed7fe26873a28d8"
+                 R/audit_collect.R                   R/audit_report.R
+"57bf94acc5e91e16bcef3a49fe78ee98" "2f77c0c92e690688d086809120b11d4e"
+                     R/audit_run.R                          R/basis.R
+"e221a69d689ff56228e0443476475670" "d31939f34ccf7efded31b4761d27e968"
+                 R/canonical_run.R                      R/canonical.R
+"7257ca948d22ed7131f801cd7d0cee6e" "a7cf5becfac021a5ea5acb9d958bce0f"
+                R/causal_collect.R          R/causal_control_report.R
+"ddc67a6f59edd0d401d8fc386aabdee6" "e4a4329f71f1d3552ee3cef55c2f21fe"
+             R/causal_path_check.R                  R/causal_report.R
+"32e15af00421b12fa1d0418da0cb6365" "31e59f692874bb9465dc40048bb574fc"
+                    R/causal_run.R             R/causal_sensitivity.R
+"c80805182465c6638a3fa3de4d4e7c7b" "644cc0539637df2ffe47e4c6185ed8b1"
+                        R/causal.R                        R/example.R
+"efdabb1e083875edf1dfed6e237bc821" "22e80adfe4773b4dce41fcc83ca06e35"
+                    R/fig_coding.R                            R/fit.R
+"5d069afe4ce68c7cf8568db2724132b5" "87873d88d58ef22a608b63efb019a444"
+               R/lalonde_collect.R                  R/lalonde_fetch.R
+"564d962079dd3419412d2b35d926cb67" "a99946d17371613026fa4f7c23129793"
+                R/lalonde_report.R                    R/lalonde_run.R
+"b424f74e2ff13c1ff71c2070422b272d" "05e9cb7c9e62bd1bbda5de687e11bcd4"
+             R/lalonde_units_run.R                       R/nuisance.R
+"b59ccc0b2d7f7b6017bc1f82880c0cd4" "572263740501781dfed95185416dd7f5"
+                 R/pilot_collect.R                   R/pilot_report.R
+"f4d001083c30cd79430a4ba805cc6b88" "adcfde2c728d3e6c4299267dd0fa3470"
+                     R/pilot_run.R                          R/pilot.R
+"000c6cc9b031da91f3ac763e374ed9e9" "897e158ba8b6cf78bbf8aed235de0aa1"
+                R/recode_collect.R                  R/recode_report.R
+"23f5c17a54c31354bf8aa8d7e706f568" "723ee992bcbe6eaf0f9cc61f8484ce99"
+                    R/recode_run.R                           R/runs.R
+"bfce73b738f3811e1227bb89ce0cf0f7" "214e9b1d9ab94db75bc381c931c13c41"
+             R/semisynth_collect.R        R/semisynth_oracle_report.R
+"c7f522884ddaad64dd10d64369c83072" "1cc48e657a19080a0c9fa367e8a368c8"
+              R/semisynth_oracle.R               R/semisynth_report.R
+"057c6b23f1d1a858a5a3a7ae22859215" "fb7453afa66cfcebb08e9323479f74bf"
+                 R/semisynth_run.R                      R/semisynth.R
+"6ca2e0738c0e36493d6f7d9a2a070ef7" "1f88a76f2d88b544edea1a8f1d7cf526"
+                   R/sim_collect.R                     R/sim_report.R
+"4efbe041ea23f56cfb5f3d5740ebbd5f" "e06ab086925c6e8635a528b5cd2a3e4b"
+                       R/sim_run.R                      R/sim_setup.R
+"44fa4c46e0b7bba1800cb8ca8f3e1c7a" "92a8ee5082af9277dce6e1c29b06815d"
+                       DESCRIPTION                data/lalonde_dw.csv
+"fd5edeac08e55046fe37b8b1c579a15a" "aba770ca0b3a2d95cdb41a45d51522da"
+
+$results_semisynth_pilot$session
+R version 4.6.0 (2026-04-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS 27.0.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: America/Los_Angeles
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+ [1] cli_3.6.6           hal9001_0.4.6       rlang_1.3.0
+ [4] stringi_1.8.9       tmle_2.1.1          SuperLearner_2.0-42
+ [7] assertthat_0.2.1    data.table_1.18.4   glue_1.8.1
+[10] listenv_1.0.0       future.apply_1.20.2 glmnet_5.0
+[13] quadprog_1.5-8      grid_4.6.0          abind_1.4-8
+[16] foreach_1.5.2       lifecycle_1.0.5     stringr_1.6.0
+[19] compiler_4.6.0      codetools_0.2-20    Rcpp_1.1.2
+[22] future_1.75.0       lattice_0.22-9      digest_0.6.39
+[25] parallelly_1.48.0   parallel_4.6.0      splines_4.6.0
+[28] shape_1.4.6.1       gam_1.22-7          origami_1.0.8
+[31] magrittr_2.0.5      Matrix_1.7-5        nnls_1.6
+[34] tools_4.6.0         iterators_1.0.14    globals_0.19.1
+[37] survival_3.8-6
+
+
+$results_semisynth_firstorder_pilot
+$results_semisynth_firstorder_pilot$inputs
+                       R/anchors.R                            R/att.R
+"3c6a0a638158e3671201e2dc30fb823a" "ae69ee0f823dccdb7ed7fe26873a28d8"
+                 R/audit_collect.R                   R/audit_report.R
+"57bf94acc5e91e16bcef3a49fe78ee98" "2f77c0c92e690688d086809120b11d4e"
+                     R/audit_run.R                          R/basis.R
+"e221a69d689ff56228e0443476475670" "d31939f34ccf7efded31b4761d27e968"
+                 R/canonical_run.R                      R/canonical.R
+"7257ca948d22ed7131f801cd7d0cee6e" "a7cf5becfac021a5ea5acb9d958bce0f"
+                R/causal_collect.R          R/causal_control_report.R
+"ddc67a6f59edd0d401d8fc386aabdee6" "6e3da7256f4f9bf4324d897759f202df"
+             R/causal_path_check.R                  R/causal_report.R
+"32e15af00421b12fa1d0418da0cb6365" "a74f3918331d27cd5c153a409774a53a"
+                    R/causal_run.R             R/causal_sensitivity.R
+"c80805182465c6638a3fa3de4d4e7c7b" "644cc0539637df2ffe47e4c6185ed8b1"
+                        R/causal.R                        R/example.R
+"efdabb1e083875edf1dfed6e237bc821" "22e80adfe4773b4dce41fcc83ca06e35"
+                    R/fig_coding.R                            R/fit.R
+"5d069afe4ce68c7cf8568db2724132b5" "87873d88d58ef22a608b63efb019a444"
+               R/lalonde_collect.R                  R/lalonde_fetch.R
+"564d962079dd3419412d2b35d926cb67" "a99946d17371613026fa4f7c23129793"
+                R/lalonde_report.R                    R/lalonde_run.R
+"b424f74e2ff13c1ff71c2070422b272d" "05e9cb7c9e62bd1bbda5de687e11bcd4"
+             R/lalonde_units_run.R                       R/nuisance.R
+"b59ccc0b2d7f7b6017bc1f82880c0cd4" "572263740501781dfed95185416dd7f5"
+                 R/pilot_collect.R                   R/pilot_report.R
+"4b202289418d041dc48c740779c21fce" "1fa66d621ebaf62c3eda615dc20335d2"
+                     R/pilot_run.R                          R/pilot.R
+"000c6cc9b031da91f3ac763e374ed9e9" "897e158ba8b6cf78bbf8aed235de0aa1"
+                R/recode_collect.R                  R/recode_report.R
+"23f5c17a54c31354bf8aa8d7e706f568" "723ee992bcbe6eaf0f9cc61f8484ce99"
+                    R/recode_run.R                           R/runs.R
+"bfce73b738f3811e1227bb89ce0cf0f7" "214e9b1d9ab94db75bc381c931c13c41"
+             R/semisynth_collect.R        R/semisynth_oracle_report.R
+"c7f522884ddaad64dd10d64369c83072" "1cc48e657a19080a0c9fa367e8a368c8"
+              R/semisynth_oracle.R               R/semisynth_report.R
+"057c6b23f1d1a858a5a3a7ae22859215" "fb7453afa66cfcebb08e9323479f74bf"
+                 R/semisynth_run.R                      R/semisynth.R
+"6ca2e0738c0e36493d6f7d9a2a070ef7" "1f88a76f2d88b544edea1a8f1d7cf526"
+                   R/sim_collect.R                     R/sim_report.R
+"4efbe041ea23f56cfb5f3d5740ebbd5f" "e06ab086925c6e8635a528b5cd2a3e4b"
+                       R/sim_run.R                      R/sim_setup.R
+"44fa4c46e0b7bba1800cb8ca8f3e1c7a" "92a8ee5082af9277dce6e1c29b06815d"
+                       DESCRIPTION                data/lalonde_dw.csv
+"fd5edeac08e55046fe37b8b1c579a15a" "aba770ca0b3a2d95cdb41a45d51522da"
+
+$results_semisynth_firstorder_pilot$session
+R version 4.6.0 (2026-04-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS 27.0.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: America/Los_Angeles
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+ [1] cli_3.6.6           hal9001_0.4.6       rlang_1.3.0
+ [4] stringi_1.8.9       tmle_2.1.1          SuperLearner_2.0-42
+ [7] assertthat_0.2.1    data.table_1.18.4   glue_1.8.1
+[10] listenv_1.0.0       future.apply_1.20.2 glmnet_5.0
+[13] quadprog_1.5-8      grid_4.6.0          abind_1.4-8
+[16] foreach_1.5.2       lifecycle_1.0.5     stringr_1.6.0
+[19] compiler_4.6.0      codetools_0.2-20    Rcpp_1.1.2
+[22] future_1.75.0       lattice_0.22-9      digest_0.6.39
+[25] parallelly_1.48.0   parallel_4.6.0      splines_4.6.0
+[28] shape_1.4.6.1       gam_1.22-7          origami_1.0.8
+[31] magrittr_2.0.5      Matrix_1.7-5        nnls_1.6
+[34] tools_4.6.0         iterators_1.0.14    globals_0.19.1
+[37] survival_3.8-6
+
+
+                           R/att.R                         R/causal.R
+"e99bed1331a336a751502882a73f4fac" "d4bfc773e48748a3c7f7473bf3b7e4fa"
+             R/semisynth_collect.R
+"b42341f6844f02b7a4719cae4779435b"
+R version 4.6.0 (2026-04-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS 27.0.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: America/Los_Angeles
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+ [1] R6_2.6.1         tidyselect_1.2.1 bit_4.6.0        tzdb_0.5.0
+ [5] magrittr_2.0.5   glue_1.8.1       tibble_3.3.1     parallel_4.6.0
+ [9] pkgconfig_2.0.3  bit64_4.8.6      lifecycle_1.0.5  readr_2.2.0
+[13] cli_3.6.6        vctrs_0.7.3      compiler_4.6.0   tools_4.6.0
+[17] hms_1.1.4        pillar_1.11.1    crayon_1.5.3     rlang_1.3.0
+[21] vroom_1.7.1

@@ -3,8 +3,7 @@
 # data/recode_predictions.csv, one row per fit x test point.
 suppressMessages(library(tidyverse))
 dir.create("data", showWarnings = FALSE)
-list.files(commandArgs(trailingOnly = TRUE)[1], pattern = "\\.rds$",
-           full.names = TRUE) |>
-  map(readRDS) |>
+source("R/runs.R")
+read_run(commandArgs(trailingOnly = TRUE)[1]) |>
   list_rbind() |>
   write_csv("data/recode_predictions.csv")

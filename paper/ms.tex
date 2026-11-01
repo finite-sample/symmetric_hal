@@ -3,7 +3,7 @@
 \usepackage{amsmath,amssymb,amsthm,mathtools}
 \usepackage{natbib}
 \usepackage{graphicx,booktabs}
-\usepackage{hyperref}
+\usepackage[hidelinks,pdfusetitle]{hyperref}
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{theorem}{Theorem}
@@ -17,170 +17,726 @@
 \newcommand{\one}{\mathbf{1}}
 \newcommand{\R}{\mathbb{R}}
 \DeclareMathOperator*{\argmin}{arg\,min}
+\input{tables/causal_macros.tex}
+\input{tables/causal_sensitivity_macros.tex}
+\input{tables/semisynth_oracle_macros.tex}
+\input{tables/pilot_macros.tex}
+\input{tables/causal_path_macros.tex}
+\input{tables/causal_canonical_macros.tex}
+\input{tables/causal_control_macros.tex}
+\input{tables/causal_coding_macros.tex}
+\input{tables/semisynth_macros.tex}
 
-\title{The Highly Adaptive Lasso Depends on How You Code Your Covariates}
+\title{Covariate Coding and Causal Estimates\\with Highly Adaptive Lasso}
 \author{Gaurav Sood}
 \date{}
+
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-The Highly Adaptive Lasso (HAL) fits a regression function as a sparse sum
-of indicator functions $\one\{x \ge u\}$ and their products, with an
-$\ell_1$ penalty that equals the function's Hardy--Krause variation
-anchored at one corner of the covariate space. Because every basis
-function points the same way, the penalty depends on how covariates are
-coded: a step that turns on at a high value of $x$ costs one unit, a
-two-way interaction that turns on at low values of both covariates costs
-three, and recoding $x_j$ as $-x_j$ changes the fit. We give the exact cost
-of a box in every orientation, show that it carries over to the risk bounds
-of HAL, and study the obvious repair, symmetric HAL, which adds the
-reflected indicators $\one\{x \le u\}$. Symmetric HAL is exactly invariant to
-sign recoding of any covariate, charges every orthant box the same, and
-attains the same $n^{-2/3}$ rate and minimax optimality as HAL over its own
-variation class, at the price of a dictionary $2^D$ times larger for
-interactions of degree $D$. In simulations its median risk is up to $2.3$
-times lower than HAL's when the signal faces away from HAL's anchor and up
-to $18\%$ higher when it faces the anchor. The dependence matters most for
-the HAL that practitioners run. In LaLonde's comparison of a job-training
-experiment with observational estimates, the estimated effect on the
-trainees from \texttt{hal9001}'s default fits ranges from $-\$16{,}526$ to
-\$1{,}849 across sign codings of the covariates; with symmetric
-first-order fits it ranges from \$1{,}852 to \$1{,}903, against an
-experimental \$1{,}794; measuring earnings in thousands of dollars moves
-the default estimate to \$47{,}975. In a semi-synthetic version of the same data with a
-known effect, the default estimator is biased by more than its standard
-error under the original coding, so its 95\% intervals cover the truth
-$36\%$ of the time, while negating the continuous covariates removes the
-bias; the symmetric estimator is unbiased in both codings, close to the
-efficiency bound, and covers $97\%$ of the time. The problem is not
-peculiar to HAL: refitting 18 common regression estimators under recodings
-that carry the same information, MARS, histogram-based gradient boosting,
-the lasso with interactions, first-order HAL, and every penalized or
-distance-based estimator given dummy variables change their predictions.
+Equivalent covariate codings should give the same predictions,
+treatment-effect estimates, and uncertainty under a declared family of
+recodings. We formalize this finite-sample requirement, distinguishing
+changes of units, origins, and signs from arbitrary monotone transformations.
+In an observational job-training example, negating continuous covariates
+changes an ATT targeted minimum loss-based estimate using first-order
+Highly Adaptive Lasso (HAL) nuisances from $\TmleOriginal$ to
+$\TmleReflected$ dollars with the sample, folds, and settings held fixed.
+Both targeting calculations pass score and step-size checks, and neither
+nuisance fit reports a convergence warning. Standardizing and canonically
+orienting covariates removes the observed sign and unit dependence to
+numerical precision, while retaining nuisance convergence warnings.
+For zero-order HAL, a symmetric functional dictionary with minimum-norm
+solution selection gives an affine-equivariant ideal estimator. An exact
+counterexample shows why interpolated knots fail the stronger monotone
+requirement; observed order statistics closed under rank reversal provide
+a construction that meets it. We also derive exact AIPW coding contrasts
+for estimates and standard errors, and characterize the symmetric penalty
+as an infimal convolution of anchored penalties. The prediction pilot finds
+no general risk advantage over the alternatives. A known-effect causal
+pilot reproduces coding agreement for the invariant alternatives, with
+accuracy rankings that depend on the causal estimator. Coding invariance
+is a separate property from accuracy and interval coverage.
 \end{abstract}
 
 \section{Introduction}
 
-The Highly Adaptive Lasso \citep{benkeser2016,vanderlaan2017} is a
-nonparametric regression estimator with unusually strong guarantees: it
-converges faster than $n^{-1/4}$ over the large class of functions with
-bounded sectional variation, without smoothness assumptions, and for that
-reason it is a common choice for the nuisance functions in targeted and
-double machine learning estimators of causal effects. In its zero-order
-form HAL regresses the outcome on indicators $\one\{x_j \ge u_j\}$ and
-their products over subsets of covariates, with knots $u$ at observed
-values, and penalizes the $\ell_1$ norm of the coefficients. That norm is
-the sectional, or Hardy--Krause, variation of the fitted function
-\emph{anchored at the lower corner}.
+An estimate of a treatment effect should not depend on whether a covariate
+is recorded with one sign or its opposite. Such a recoding changes neither
+the available information nor the causal contrast. Yet it can alter the
+regularization of fitted outcome regressions and propensity scores, and
+those changes can persist after targeted estimation. In the application
+below, the sign and nominal interval of an ATT estimate change when four
+continuous covariates are negated, despite common observations, folds, and
+estimation settings.
 
-The connection to causal inference is direct. Targeted minimum loss
-estimation \citep{vanderlaan2017} and double machine learning
-\citep{chernozhukov2018} estimate a treatment effect from two nuisance
-fits, an outcome regression and a propensity score, and are asymptotically
-normal when the product of their estimation errors is $o_P(n^{-1/2})$, as
-when each converges faster than $n^{-1/4}$. HAL is used for the nuisance
-fits because it delivers $n^{-1/3}$ up to logarithmic factors whenever the
-true functions have finite sectional variation, with no smoothness
-assumptions, and undersmoothed HAL even yields efficient plug-in
-estimators \citep{vanderlaan2023}. The constant in those rates grows with
-the variation of the true function, and that variation is the anchored
-one. Recoding a covariate leaves the asymptotic guarantee intact but
-changes the size of the class the truth must lie in, the fitted nuisance
-functions, and in finite samples the point estimate and its confidence
-interval. Section~\ref{sec:real} measures how much: on LaLonde's
-job-training data the default \texttt{hal9001} estimate of the effect on
-the trainees changes sign with the coding.
+The Highly Adaptive Lasso (HAL; \citealp{benkeser2016,vanderlaan2017})
+provides a concrete setting for studying this dependence. In an anchored
+zero-order dictionary, every indicator points in the same direction.
+Reversing a covariate changes which functions have inexpensive coefficient
+representations. Hardy--Krause variation's dependence on its anchor is
+established \citep{aistleitner2015,aistleitner2017}. The causal application
+uses a first-order implementation, so its sensitivity measures the whole
+pipeline: basis construction, penalties, tuning, and optimization. An exact
+univariate example isolates a first-order penalty mechanism: reflection
+changes which endpoint slope is penalized. The multivariate analysis develops
+a zero-order remedy. Neither calculation decomposes every feature of the
+software comparison.
 
-Every HAL basis function switches on as covariates increase. A function
-that switches on as a covariate decreases has to be built from
-differences. Take two covariates and the function that equals $1$ when
-both are small, $\one\{x_1 \le a, x_2 \le b\}$. HAL can only write it as
+Coding dependence under regularization is not specific to HAL.
+\citet{detmer2020} show that categorical group-lasso fits can depend on
+the coding scheme and, under reference coding, on the reference category.
+This illustrates the distinction between preserving the information or
+linear predictor space and preserving a penalized fit. Here we examine
+how coding dependence reaches causal estimates and their uncertainty,
+and give conditions on the complete fitting procedure that prevent it.
+These conditions concern functional predictions, including at held-out
+points, rather than equality of training fits alone.
+
+The primary requirement is that equivalent expressions of the covariates
+give the same analysis. Making this requirement precise comes before
+comparing estimators: we must specify the admissible recodings and the
+outputs required to agree, including predictions at unobserved covariates
+and reported uncertainty. Lower prediction error is a separate possible
+property, not a condition for valuing coding invariance. A fixed sample can
+demonstrate failure of invariance; known-truth experiments are needed to
+assess its accuracy tradeoffs.
+
+A symmetric dictionary is one way to obtain invariance. We retain distinct
+functional atoms even when their training columns agree and select the
+coefficient vector of smallest Euclidean norm among primary lasso minimizers.
+Minimum-norm selection and its vanishing-ridge characterization are
+established results \citep[Lemmas 9--10]{tibshirani2013}; we use them to make
+predictions equivariant under reflection. A simpler alternative first chooses
+a common orientation from the training covariates and averages directions
+when the orientation rule is ambiguous. Thus symmetry of the dictionary is
+a sufficient construction, not a necessary condition for invariant predictions.
+
+The symmetric penalty has a separate property: different components can use
+different anchors. An exact finite-grid example has lower symmetric penalty
+than its penalty at every single anchor. We characterize this distinction
+and give a lattice risk bound, while keeping those mathematical statements
+separate from comparative risk claims for the cross-validated implementation.
+An exploratory prediction study compares canonical orientation, anchor
+selection and averaging, and symmetric HAL on common simulation draws.
+It finds no general risk advantage for the symmetric fit. A paired
+known-effect causal pilot checks coding movement and reports bias, RMSE,
+and coverage with Monte Carlo uncertainty. Its accuracy comparisons remain
+exploratory and do not validate interval coverage.
+
+\section{Equivalent codings and the invariance requirement}\label{sec:recodings}
+
+Let $D=\{(W_i,A_i,Y_i)\}_{i=1}^n$, keeping treatment and outcome definitions
+fixed. A covariate recoding $T$ preserves information if it is a measurable
+bijection between the original support and the coded support, with a
+measurable inverse. Then $\sigma\{T(W)\}=\sigma(W)$: each representation
+determines the other. This includes a one-to-one categorical encoding on
+its valid image, even when the ambient dimension changes. Binning, rounding,
+and squaring a variable with both positive and negative support generally
+fail this condition. They are outside the present requirement.
+
+Information preservation leaves the causal functional unchanged. If
+$W'=T(W)$, then
 \[
-  \one\{x_1 \le a, x_2 \le b\} = 1 - \one\{x_1 > a\} - \one\{x_2 > b\}
-  + \one\{x_1 > a, x_2 > b\},
+ Q_a^T(w')=Q_a\{T^{-1}(w')\},\qquad
+ g^T(w')=g\{T^{-1}(w')\}.
 \]
-three penalized terms, while $\one\{x_1 \ge a, x_2 \ge b\}$ is one. The
-penalty, and so the estimator, depends on which way the axes point. Whether
-a covariate enters as age or as years to retirement, as a dose or as its
-distance from a maximum, as a score or as a rank counted from the top, is
-usually a coding convention, and an estimator whose fit depends on it is
-fragile in a way that is easy to miss: two analysts with the same data and
-the same tuning get different answers. Figure~\ref{fig:coding} shows it on
-one simulated data set.
+Consequently $E\{Q_1^T(W')-Q_0^T(W')\mid A=1\}=\psi$.
+Conditional exchangeability and overlap are likewise unchanged: the
+conditioning information is the same. This does not establish those
+assumptions in a given application.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\textwidth]{../figures/coding.pdf}
-\caption{One data set ($n = 500$, true function $2$ on the dashed box, noise
-SD $1.2$) fit under four sign codings of $(x_1, x_2)$, each drawn on the
-original axes as fitted minus true value. Cross-validation folds are the
-same in every fit. HAL's error halves as the coding turns the box toward its
-anchor; symmetric HAL's fit is the same in every coding.}
-\label{fig:coding}
-\end{figure}
+\subsection{Which transformations should an estimator respect?}
 
-This paper makes the dependence exact and removes it.
-\begin{enumerate}
-\item \emph{The cost of orientation} (Section~\ref{sec:cost}). For a box
-  with $m$ upper-sided, $k$ lower-sided and $t$ two-sided coordinates, the
-  anchored penalty is $2^{t+k}$ (or $2^{t+k}-1$ for a lower orthant) times
-  the box's height, while the smallest penalty available with both
-  orientations is $2^t$ (Proposition~\ref{prop:box}). The lower bound comes
-  from the Vitali variation and holds for any representation. Through a
-  standard oracle inequality the same factor enters HAL's risk bound
-  (Corollary~\ref{cor:orient}).
-\item \emph{Coding invariance} (Section~\ref{sec:equiv}). Adding the
-  reflected indicators $\one\{x_j \le u\}$ gives a dictionary that sign
-  recoding maps onto itself. The resulting estimator, symmetric HAL, has
-  identical fitted values when any covariate is negated
-  (Proposition~\ref{prop:equiv}); HAL does not.
-\item \emph{No loss in rate} (Section~\ref{sec:rates}). The symmetric
-  variation class is a sum of $2^d$ reflected copies of the anchored class,
-  so its metric entropy is within a constant of the anchored one. The
-  constrained symmetric estimator inherits the $n^{-2/3}$ rate of
-  \citet{fang2021} and is minimax rate optimal over its class
-  (Proposition~\ref{prop:rate}).
-\item \emph{Evidence} (Sections~\ref{sec:sims}--\ref{sec:semisynth}).
-  Simulations across signal shapes and signal-to-noise ratios, with CART
-  and random forests as references, measure the gap in risk rather than in
-  bounds. Recoding the covariates of two prediction data sets and of
-  LaLonde's benchmark measures it on real data, and a semi-synthetic
-  version of the benchmark, with a known effect, measures bias, variance
-  and coverage of the treatment-effect estimators.
-\item \emph{Beyond HAL} (Section~\ref{sec:audit}). An audit of 18 common
-  estimators under negation, shifts, changes of units and of the
-  reference level finds four mechanisms of coding dependence, of which
-  symmetric HAL removes one.
-\end{enumerate}
+Information equivalence alone does not specify the measurement structure
+that a learner should use. Two useful requirements for numerical covariates
+are nested. Coordinatewise affine recodings,
+\[
+ \mathcal G_{\rm aff}=\{T:T_j(w_j)=a_j+b_jw_j,\ b_j\ne0\},
+\]
+cover changes of units, zero points, and polarity, including a binary-label
+swap. Coordinatewise strictly monotone recodings form a larger family,
+$\mathcal G_{\rm ord}$, preserving coordinate order up to reversal. This
+includes logarithms on positive support and cubic transformations on the
+real line. Such transformations preserve information while changing
+distances and spacings. Requiring invariance to them makes those spacings
+irrelevant to the estimator. Nominal-category permutations and invertible
+transformations that mix coordinates are additional requirements; neither
+is automatically covered by a coordinatewise monotone guarantee.
+Section~\ref{sec:nominal} gives an exact nominal-relabeling counterexample.
 
-\paragraph{Related work.} That Hardy--Krause variation depends on an anchor
-is known in quasi-Monte Carlo, where it is anchored at either corner
-\citep{aistleitner2015}; \citet{fang2021} note the choice and fix the anchor
-at $0$. Their near-parametric rate for HAL-type estimators is proved for
-indicators of upper-right rectangles, the boxes that face the anchor. The
-statistical consequences of the anchor for HAL, and an estimator free of it,
-are to our knowledge new. Multivariate adaptive regression splines
-\citep{friedman1991} use reflected pairs of hinge functions, $(x-t)_+$ and
-$(t-x)_+$, for the same reason; symmetric HAL is the zero-order, convex
-analogue. The lasso version of MARS \citep{ki2024} keeps only $(x-t)_+$,
-noting that $(t-x)_+ = (x-t)_+ - x + t$ lies in its span; the span is the
-same, but the penalty of a function is not, which is the subject of
-Section~\ref{sec:cost}. First-order HAL, the \texttt{hal9001} default, likewise uses one-sided
-hinges; we develop the theory for zero order and show in
-Section~\ref{sec:real} that the default estimator is at least as sensitive
-to the coding. The implementation in
-\texttt{hal9001} \citep{hejazi2020} uses the anchored basis: we reproduce
-its fits exactly. Regression trees \citep{breiman1984} have no such
-dependence: a split at $c$ sends $x_j \ge c$ to one child and $x_j < c$ to
-the other, so negating a covariate swaps the children and leaves the fit
-unchanged. A tree is a greedy search over products of these two-sided
-indicators \citep{friedman1991,klusowski2024}; symmetric HAL is the lasso
-over the same set, of which HAL keeps one orientation.
+There is a concrete obstruction to requiring invariance under every
+information-preserving map. Consider a deterministic predictor that receives
+the coded sample and query, without an inverse map to a privileged coding.
+A bijection can swap two covariate values absent from the training sample
+while fixing every observed value. The training data then remain unchanged.
+Pointwise equivariance under that bijection forces equal predictions at the
+two unseen values. Under all coordinatewise bijections this argument applies
+to each coordinate with the others held fixed. Thus universal pointwise
+invariance discards distinctions among unseen levels, including order and
+distance. The admissible family must be stated; information preservation
+is necessary to our question, but does not by itself select that family.
 
+\subsection{Predictions, estimates, and uncertainty}
 
-\section{Setup}
+Let $U$ record row-attached folds and any auxiliary randomization. For a
+declared family $\mathcal G$, require
+\begin{equation}\label{eq:prediction-equivariance}
+ \widehat Q_a(TD,U)(Tw)=\widehat Q_a(D,U)(w),\qquad
+ \widehat g(TD,U)(Tw)=\widehat g(D,U)(w),
+ \quad T\in\mathcal G.
+\end{equation}
+This is a finite-sample requirement on the entire fitted function, not only
+its values at training observations. For scalar outputs, require the point
+estimate, standard error, and interval endpoints to remain unchanged.
+Coupling $U$ separates coding dependence from changes in random splits.
+
+\begin{proposition}[Transfer to downstream inference]\label{prop:transfer}
+Suppose the nuisance fits satisfy \eqref{eq:prediction-equivariance} on
+every outer training sample. Suppose subsequent clipping, calibration,
+targeting, and inference are deterministic functions of the nuisance
+predictions, $(A_i,Y_i)$, and common settings. Then their point estimates,
+influence-function standard errors, and confidence intervals are unchanged
+under every $T\in\mathcal G$.
+\end{proposition}
+\begin{proof}
+Each held-out nuisance prediction is unchanged. Every subsequent step
+therefore receives identical inputs and returns identical outputs.
+\end{proof}
+The same argument applies to a bootstrap with common resampling indices if
+the full procedure is equivariant on every resample. Invariance of an
+interval is distinct from correct coverage. Targeting need not repair a
+failure of nuisance equivariance, and cancellation can make a scalar
+estimate invariant even when its nuisances are not.
+
+For a fixed sample, define the coding range
+\[
+ \Delta_{\mathcal G}(D,U)=
+ \sup_{T,S\in\mathcal G}|\widehat\psi(TD,U)-\widehat\psi(SD,U)|.
+\]
+The requirement is $\Delta_{\mathcal G}=0$. A finite collection of recodings
+gives a lower bound on this range and can refute invariance without knowing
+the true treatment effect. Simulations can subsequently study the frequency
+and magnitude of departures under specified populations, or the accuracy
+and computation of invariant alternatives. They are not needed to define
+the property or to establish its value as independence from coding choices.
+
+\subsection{How nuisance changes reach AIPW inference}
+
+An exact finite-sample calculation identifies conditions that can amplify
+coding dependence. Keep $(A_i,Y_i)$ fixed, let $N_1=\sum_i A_i$,
+$N_0=n-N_1$, and assume both groups are present. Write $q_i,g_i$ and
+$q_i',g_i'$ for the effective untreated-mean and propensity predictions
+under two codings, with $0\le g_i,g_i'<1$. These are the predictions actually
+passed to AIPW, after any preparation and with outcomes in their original
+units. Define $\delta q_i=q_i'-q_i$ and $\delta g_i=g_i'-g_i$.
+
+\begin{proposition}[Propagation through AIPW]\label{prop:aipw-change}
+For the ATT estimator
+\[
+ \widehat\psi(q,g)=\frac{1}{N_1}\sum_i
+ \left\{A_i-(1-A_i)\frac{g_i}{1-g_i}\right\}(Y_i-q_i),
+\]
+let $\Delta\widehat\psi=\widehat\psi(q',g')-\widehat\psi(q,g)$ and
+\begin{equation}\label{eq:aipw-change}
+ z_i=\left\{-A_i+(1-A_i)\frac{g_i'}{1-g_i'}\right\}\delta q_i
+ -(1-A_i)(Y_i-q_i)
+       \frac{\delta g_i}{(1-g_i)(1-g_i')}.
+\end{equation}
+Then $\Delta\widehat\psi=N_1^{-1}\sum_i z_i$. For the empirical influence
+values
+\[
+ IC_i=\frac{A_i(Y_i-q_i-\widehat\psi)
+ -(1-A_i)g_i(Y_i-q_i)/(1-g_i)}{p},\qquad p=N_1/n,
+\]
+and $\widehat{SE}=\operatorname{sd}(IC)/\sqrt n$,
+\begin{equation}\label{eq:aipw-se-change}
+ \Delta IC_i=\frac{z_i-A_i\Delta\widehat\psi}{p},\qquad
+ |\widehat{SE}'-\widehat{SE}|
+ \le\frac{\operatorname{sd}(\Delta IC)}{\sqrt n}.
+\end{equation}
+\end{proposition}
+\begin{proof}
+Subtract the two estimator numerators and use
+$g_i'/(1-g_i')-g_i/(1-g_i)
+=\delta g_i/\{(1-g_i)(1-g_i')\}$.
+Subtracting the influence values gives the second identity. Sample standard
+deviation is a centered Euclidean norm divided by $\sqrt{n-1}$, so its reverse
+triangle inequality gives the bound.
+\end{proof}
+
+The decomposition changes the propensity first, then the outcome regression;
+reversing this order reallocates their interaction. Its signed components
+are accounting identities, not unique causal attributions. The triangle
+inequality gives
+$|\Delta\widehat\psi|\le N_1^{-1}\sum_i|z_i|\le B_q+B_g$, where
+\begin{align*}
+ B_q&=\frac{1}{N_1}\sum_i
+ \left\{A_i+(1-A_i)\frac{g_i'}{1-g_i'}\right\}|\delta q_i|,\\
+ B_g&=\frac{1}{N_1}\sum_i
+ \frac{(1-A_i)|Y_i-q_i|\,|\delta g_i|}{(1-g_i)(1-g_i')}.
+\end{align*}
+If both propensities are at most $1-\eta$, the prediction changes are bounded
+by $\epsilon_q,\epsilon_g$, and control residuals satisfy $|Y_i-q_i|\le M$,
+then
+\begin{equation}\label{eq:aipw-overlap-bound}
+ |\Delta\widehat\psi|\le
+ \epsilon_q\left\{1+\frac{N_0}{N_1}\frac{1-\eta}{\eta}\right\}
+ +\frac{N_0}{N_1}\frac{M\epsilon_g}{\eta^2}.
+\end{equation}
+Thus small nuisance changes alone do not ensure small ATT movement. Weak
+control overlap, large control residuals, and a small treated fraction can
+amplify them. The bound is sufficient, not a prediction of movement: signed
+contributions can cancel. Propensity calibration can exceed an initial
+clipping ceiling, so $\eta$ must describe the effective predictions.
+
+Cancellation can also hide changes in uncertainty. For
+$A=(1,1,0,0)$, $Y=(1,-1,1,-1)$, and $g=g'=(1/2,1/2,1/2,1/2)$,
+take $q=(0,0,0,0)$ and $q'=(1,1,1,1)$. Both ATT estimates are zero, but
+their influence values are $(2,-2,-2,2)$ and $(0,-4,0,4)$, respectively.
+The standard errors are $\sqrt{4/3}$ and $\sqrt{8/3}$. Checking only
+point-estimate agreement therefore misses a failure of inference invariance.
+These results concern AIPW; they supply neither a quantitative TMLE bound
+nor a coverage guarantee.
+
+\subsection{Sources of coding dependence}
+
+The requirement identifies separate places where the pipeline can change.
+Basis functions or knots may fail to transform into the same functions.
+Even when their span is unchanged, the coefficient penalty may assign
+different costs to the same function. Nonunique primary solutions can lead
+to different predictions away from the training sample. Tuning may change
+through folds, candidate penalties, validation predictions, or tie rules.
+Finally, a theoretically equivariant procedure can lose numerical
+equivariance through tolerances, path truncation, or floating-point
+comparisons. These mechanisms call for distinct checks. Representation-cost
+calculations concern the penalty; held-out knot counterexamples concern
+the function space; solver-path controls concern numerical implementation.
+
+\subsection{A first-order penalty mechanism}\label{sec:firstorder-penalty}
+
+Coding dependence can arise even in one dimension with first-order splines.
+Fix $a<t_1<\cdots<t_m<b$ and write $u_+=\max(u,0)$. Consider continuous
+piecewise-linear functions on $[a,b]$ with knots among the $t_j$. The
+left-anchored basis is $x-a,(x-t_1)_+,\ldots,(x-t_m)_+$, and the
+right-anchored basis is $b-x,(t_1-x)_+,\ldots,(t_m-x)_+$. Both include a
+free constant and penalize every other coefficient with unit weight.
+Reflection interchanges these bases after mapping the knots and domain.
+They span exactly the same functions.
+
+\begin{proposition}[Endpoint slopes in the first-order penalty]
+\label{prop:firstorder-penalty}
+For such a function $f$, let
+$\gamma_j=f'(t_j+)-f'(t_j-)$ be its slope jumps. The two representation
+penalties are
+\[
+ V_L(f)=|f'(a+)|+\sum_j|\gamma_j|,\qquad
+ V_R(f)=|f'(b-)|+\sum_j|\gamma_j|.
+\]
+In particular, $f(x)=(x-t)_+$ for $a<t<b$ has $V_L(f)=1$ and $V_R(f)=2$.
+\end{proposition}
+\begin{proof}
+The left linear coefficient is $f'(a+)$, and each hinge coefficient is
+the corresponding slope jump. On the right, the linear coefficient is
+$-f'(b-)$ and the hinge coefficients are the same slope jumps. The constant,
+endpoint slope, and jumps uniquely determine the function, proving both
+formulas. A single upper hinge has left slope zero, right slope one, and
+one unit jump.
+\end{proof}
+
+The different penalties can produce different exact fits on the same sample.
+Take $x=(0,1/2,1)$, $y=(0,0,1/2)$, one interior knot at $1/2$, and
+$\lambda=1/216$ in the squared-error objective~\eqref{eq:lasso}. In the
+left basis $(x,(x-1/2)_+)$, the unique solution has intercept zero and
+coefficients $(1/18,5/6)$, giving fitted values
+$(0,1/36,17/36)$. In the right basis $(1-x,(1/2-x)_+)$, the unique
+solution has intercept $4/9$ and coefficients $(-13/18,1/2)$, giving
+$(-1/36,1/12,4/9)$. In each case the residual mean is zero and
+$X^\top(\hat f-y)/3=-\lambda\operatorname{sign}(\hat\beta)$, which
+certifies optimality. The design including the intercept has full rank,
+so each solution is unique. Neither nonunique solutions nor optimization
+error is needed for coding dependence in this example.
+
+The first-order basis generated by \texttt{hal9001} version \HalVersion{}
+on these three covariate values gives these same atoms, plus an endpoint
+atom identically zero on the domain. Its no-formula fit uses unit penalty
+factors and disables feature standardization \citep{hal9001fit}. The example
+fixes the knots and penalty; it is not a reproduction of the package's
+default cross-validation. It establishes a possible first-order penalty
+mechanism, not its contribution to the observational result below. If
+affine functions are unpenalized, both penalties instead reduce to
+$\sum_j|\gamma_j|$. That removes this univariate endpoint-slope mechanism.
+
+The latter penalty is established in the spline literature. The univariate
+MARS-LASSO formulation of \citet[Section~4.1]{ki2024} penalizes the total
+variation of the derivative and leaves the linear component unpenalized.
+Its endpoint convention therefore differs from the unit-penalty example
+above. Their construction also scales covariates to a common interval
+before penalization. Reflection invariance of derivative variation alone
+does not give unit invariance: for $T(x)=a+bx$, $b\ne0$, the derivative
+variation of $f\circ T^{-1}$ is $\operatorname{TV}(f')/|b|$ on the
+transformed domain. Scale handling, knots, and tuning remain part of the
+fitting procedure. Neither the univariate calculation nor its
+unpenalized-linear alternative establishes invariance of a complete
+multivariate implementation.
+
+\section{Coding sensitivity in treatment-effect estimation}\label{sec:causal}
+
+Negating continuous covariates changes the ATT TMLE from
+$\TmleOriginal$ to $\TmleReflected$ dollars, a movement of
+$\TmleMovement$ dollars (Table~\ref{tab:causal}). The outcome, treatment,
+sample membership, folds, nuisance learner, clipping rules, and targeting
+settings are held fixed. Both fits pass the numerical targeting checks
+below and their nuisance fits produce no convergence warnings. This is a
+sensitivity result for the specified estimation pipeline; the observational
+comparison does not establish which estimate is causally accurate.
+
+The sample combines the Dehejia--Wahba treated group with the PSID comparison
+group \citep{lalonde1986,dehejia1999}: \CausalTreated{} treated observations
+among \CausalN{} observations. The outcome is 1978 earnings. Covariates are
+age, education, indicators for being Black, Hispanic, married, or without
+a degree, and earnings in 1974 and 1975. The reflected coding negates age,
+education, and both pretreatment earnings variables. A unit-change coding
+expresses age in months and pretreatment earnings in thousands of dollars.
+All three transformations preserve information and the treatment contrast.
+
+Write $A$ for training participation, $Y$ for earnings, and $W$ for the
+covariates. With $Q_a(w)=E[Y\mid A=a,W=w]$, the statistical target is
+$\psi=E[Q_1(W)-Q_0(W)\mid A=1]$. Under consistency, conditional
+exchangeability of the untreated potential outcome, and control overlap
+on the treated support, this equals $E[Y(1)-Y(0)\mid A=1]$.
+The coding comparison holds that functional and sample fixed; it does not
+test these identifying assumptions.
+
+For each coding, five outer folds produce held-out predictions of
+$Q_0$, $Q_1$, and $g(w)=P(A=1\mid W=w)$.
+Each training fit uses ten common inner folds. Nuisance estimation uses
+\texttt{hal9001} version \HalVersion{} with its default first-order basis,
+maximum interaction degree three, knot counts, and penalty selection
+\citep{hejazi2020}. These are package-default fits, distinct from the
+zero-order symmetric implementation developed below. The comparison measures
+the behavior of the whole fitted procedure and does not isolate the
+penalty from knot construction, tuning, or numerical optimization.
+
+Raw AIPW uses the held-out $Q_0$ predictions and caps $g$ at $0.99$:
+\[
+ \hat\psi_{\mathrm{AIPW}}=
+ \frac{\sum_i\{A_i(Y_i-\hat Q_{0i})-
+ (1-A_i)\hat g_i(1-\hat g_i)^{-1}(Y_i-\hat Q_{0i})\}}
+ {\sum_i A_i}.
+\]
+For the common-initial-nuisance comparison, rescale outcomes to $[0,1]$
+using their observed range \citep{gruber2010} and clip each outcome prediction to
+$[10^{-6},1-10^{-6}]$. Initially clip propensities to $[0.01,0.99]$, then
+fit a pooled logistic intercept with the clipped log odds as offset, so
+the mean initial propensity equals the observed treatment proportion.
+The calibrated AIPW and TMLE start from these same prepared predictions.
+Reported estimates and standard errors are transformed back to dollars.
+
+The ATT TMLE uses the exported \texttt{oneStepATT} implementation in
+\texttt{tmle} version \TmleVersion{}, which jointly targets the outcome regressions
+and propensity score through a universal least-favorable submodel
+\citep{vanderlaan2016}. We supply the entire sample without the trimming
+performed by the package's high-level ATT wrapper. Initial nuisance fits
+are cross-fitted; calibration and targeting use the pooled sample.
+A numerical propensity floor of $10^{-8}$ and outcome-probability bounds
+$[10^{-12},1-10^{-12}]$ during targeting are separate from the initial
+clipping rules. The smaller outcome bound lets initially clipped predictions
+move along the targeting path. Reusing the initial bound can block that
+motion, so a forward loss-stop flag alone does not establish a solved
+influence-function equation. We compare step sizes $10^{-4}$,
+$10^{-5}$, and $10^{-6}$ and report the smallest-step fit. Acceptance
+requires convergence, an absolute empirical influence-function mean below
+$0.01$ standard errors, a final refinement change below $0.01$ standard
+errors, and a relative standard-error change below $0.01$.
+
+\input{tables/causal.tex}
+
+Substituting the reflected propensity predictions alone, while retaining
+both original outcome regressions, changes the estimate to
+$\TmlePropensitySwap$ dollars. The full set of component substitutions
+in Table~\ref{tab:causal-sensitivity} shows that the components interact;
+their separate changes do not sum to the full coding difference. Using
+common outcome bounds of $[0,200000]$ dollars also preserves the sign
+reversal: $\TmleBoundOriginal$ versus $\TmleBoundReflected$ dollars.
+These checks rule out the choice of sample maximum as a necessary source
+of the reversal and show that changing propensity predictions is sufficient.
+They do not identify the contribution of each numerical or modeling choice
+inside the nuisance learner.
+
+The sign-reversal comparison shows that targeting need not erase the
+coding dependence of initial nuisances. Its nominal interval changes from
+excluding zero on the negative side to including zero. The unit-change
+fits also move substantially, but produce nuisance convergence warnings;
+they describe software-default behavior and do not distinguish
+penalty scaling from incomplete optimization. All intervals use the
+empirical influence-function standard error. This one observational sample
+does not assess their coverage, establish exchangeability, or demonstrate
+an improvement from symmetric HAL.
+
+\subsection{Observed AIPW changes and cancellation}
+
+Applying Proposition~\ref{prop:aipw-change} to the saved predictions gives
+the exact decomposition in Table~\ref{tab:causal-contrast}. Sign reversal
+increases raw AIPW by $\AipwSignMovement$ dollars while decreasing its
+standard error by $\AipwSignSEMovement$ dollars. The bound $B_q+B_g$ is
+$\AipwSignBound$ dollars, much larger than the net movement. Summing the
+complete row changes $z_i/N_1$ separately by sign gives
+$\AipwSignPositive$ and $\AipwSignNegative$ dollars. These totals do not
+depend on the substitution order and establish cancellation across rows.
+A small net change therefore need not imply small changes in individual
+contributions.
+
+The largest propensity change is $\AipwSignMaxG$, and the largest untreated
+outcome-prediction change is $\AipwSignMaxQ$ dollars. Thus the observed
+comparison does not represent only tiny prediction perturbations amplified
+by poor overlap. The algebra explains how the effective nuisance changes
+reach AIPW and its standard error, without identifying which part of nuisance
+fitting produced those changes. The attribution between the $q$ and $g$
+terms depends on the substitution order; the reproducible output also
+reports the reverse order. These AIPW calculations do not explain the larger
+TMLE sign reversal, whose targeting map is different.
+
+\input{tables/causal_coding_contrasts.tex}
+
+\subsection{Solver and scaling controls}
+
+We repeat the first-order analysis with a tighter convergence threshold
+and larger iteration budget, with covariate standardization, and with both
+controls (Table~\ref{tab:causal-controls}). Standardization subtracts each
+outer training sample's column means and divides by its column standard
+deviations; the same transformation is applied to held-out observations.
+The tighter solver uses threshold $10^{-12}$ and iteration limit $10^6$.
+Observations, folds, and targeting settings remain common across codings.
+
+Standardization removes the observed unit dependence to numerical precision
+at both solver settings. Across these two controls, the largest absolute
+unit-change movement is $\StandardizedUnitATTMovement$ dollars in the
+TMLE and $\StandardizedUnitSEMovement$ dollars in its standard error.
+Tighter optimization alone leaves substantial unit dependence.
+
+The point-estimate sign reversal persists under each control. Nuisance
+convergence warnings also persist, including under the combined controls.
+Thus the reversal is not removed by these changes in settings, but the
+comparison does not establish that incomplete optimization is irrelevant.
+The large, coding-dependent standard errors under standardization further
+separate reproducibility of a procedure from precision of its estimate.
+
+\input{tables/causal_controls.tex}
+
+\subsection{A numerical mechanism in a tighter-solver control}
+
+Increasing solver accuracy can expose a separate difficulty in penalty
+selection. With automatic penalties, \texttt{cv.glmnet} fits a master path
+and separate paths in its validation folds, then aligns predictions to the
+master penalties \citep{glmnetcv}. A fold whose path ends before a requested
+penalty can return its last available fit. Successful optimization of the
+selected master fit therefore does not establish that every validation
+fold reached the same penalty.
+
+We reproduce this mechanism in a tighter-solver version of the original
+coding, with convergence threshold $10^{-12}$ and iteration limit $10^6$.
+For $Q_1$ in outer fold one, inner fold four stops at
+$\PathLastLambda$, above the selected master penalty
+$\PathSelectedLambda$. Its predictions at the selected penalty equal its
+endpoint predictions exactly. Extending that fold's path with an iteration
+limit of $10^7$, while holding its basis and convergence threshold fixed,
+changes validation predictions by as much as $\PathPredictionMovement$
+dollars. Predictions between fitted penalties use the package's linear
+interpolation rule \citep{glmnetpredict}. In contrast, refitting the master
+path through its selected penalty reproduces its saved held-out predictions
+within $\PathMasterMovement$ dollars; its maximum KKT residual, divided by
+the corresponding centered feature RMS and the outcome standard deviation,
+is $\PathMasterKKT$.
+
+This is a verified validation-path artifact in one component of the
+tighter control. It does not measure its frequency, demonstrate a change
+in the selected penalty, or explain the sign reversal under default
+settings. The distinction matters when interpreting tighter fits as a
+control for optimization: completing a master fit and completing the
+validation paths are different requirements.
+
+\subsection{Canonical orientation in the application}
+
+Standardization followed by canonical orientation makes the first-order
+ATT TMLE reproducible across the three codings. The estimate is
+$\CanonicalATT$ dollars under each coding (Table~\ref{tab:causal-canonical}).
+The sign-reversal movement is $\CanonicalSignMovement$ and the unit-change
+movement is $\CanonicalUnitMovement$ dollars. The wrapper uses training
+covariates to choose an orientation before invoking the same first-order
+package, as detailed in Section~\ref{sec:canonical}. Each coding uses the
+same wrapper, folds, and targeting settings.
+
+Each coding produces \CanonicalWarnings{} nuisance convergence warnings.
+Identical inputs can reproduce the same incomplete solver paths, so coding
+agreement does not certify optimization or causal accuracy. All three
+targeting calculations pass the score and refinement checks. The estimate
+is a reproducible result of this alternative procedure, not evidence that
+its causal bias or interval coverage is better than under another coding.
+
+\input{tables/causal_canonical.tex}
+
+\section{A known-effect reference distribution}\label{sec:known-effect}
+
+To assess accuracy separately from coding reproducibility, we construct a
+population with a known ATT. Its covariate distribution is the empirical
+distribution of the \CausalN{} application rows. A logistic regression of
+treatment on the covariates, age squared, and zero-earnings indicators defines
+$g(W)$, capped at $0.95$. A control-group regression with natural splines in
+age and both pretreatment earnings variables, plus the remaining covariates
+and zero-earnings indicators, defines $Q_0(W)$. These fitted functions and the
+control-regression residual standard deviation $\sigma$ are held fixed.
+Each simulated sample draws covariate rows with replacement, draws
+$A\mid W\sim\operatorname{Bernoulli}\{g(W)\}$, and sets
+\[
+ Y=Q_0(W)+1800A+\epsilon,\qquad
+ \epsilon\sim N(0,\sigma^2),
+\]
+independently across observations. The ATT is exactly $1800$. The Gaussian
+model permits negative outcomes; it calibrates an earnings-like outcome
+without reproducing the full empirical earnings distribution. Outcome
+truncation would change this data-generating model and is not applied.
+
+The oracle calculation uses the true $Q_0$ and $g$ in raw AIPW. For
+$N_1=\sum_i A_i>0$, its error satisfies the exact identity
+\begin{equation}\label{eq:oracle-noise}
+ \hat\psi_{\mathrm{oracle}}-1800
+ =\frac{1}{N_1}\sum_i
+ \left\{A_i-(1-A_i)\frac{g(W_i)}{1-g(W_i)}\right\}\epsilon_i.
+\end{equation}
+Conditional on the sampled covariates and treatments, this error has mean
+zero and is Gaussian, with variance
+\[
+ \operatorname{Var}(\hat\psi_{\mathrm{oracle}}\mid W,A)
+ =\frac{\sigma^2}{N_1^2}
+   \sum_i\left\{A_i+(1-A_i)
+       \left(\frac{g(W_i)}{1-g(W_i)}\right)^2\right\}.
+\]
+This provides an exact conditional interval benchmark. The nonparametric
+ATT influence-function variance at this population is
+$\sigma^2 E\{g(W)/(1-g(W))\}/p^2$, where $p=E\{g(W)\}$. Expectations are
+computed over the fixed empirical covariate population. The corresponding
+asymptotic standard-error benchmark at the application sample size is
+$\OracleEfficiencySE$ outcome units; it is distinct from the conditional
+variance for a particular simulated sample.
+
+Across \OracleReplicates{} independent oracle draws, estimated bias is
+$\OracleBias$ with Monte Carlo standard error $\OracleBiasMCSE$, and the
+sampling standard deviation is $\OracleSD$. Empirical influence-function
+intervals cover the true ATT in $\OracleCoverage\%$ of draws, compared with
+$\OracleConditionalCoverage\%$ for intervals using the known conditional
+variance (Table~\ref{tab:oracle}). This benchmark checks the generator and
+oracle inference calculation. It does not validate intervals after nuisance
+estimation, propensity calibration, or TMLE targeting. In particular,
+oracle-initialized TMLE modifies its starting nuisance functions and is a
+different estimator from the raw oracle AIPW benchmark.
+
+\input{tables/semisynth_oracle.tex}
+
+\subsection{Fitted-nuisance comparison}
+
+% Design constants: R/semisynth_run.R, R/nuisance.R, and R/att.R.
+The exploratory causal pilot uses 20 draws of \CausalN{} observations
+from this population. Each draw is analyzed in its original coding and
+with the continuous covariates negated. All learners share the same draw,
+five outer folds, and ten inner folds within each outer-training nuisance
+sample. The six nuisance specifications are the true functions, anchored
+zero-order HAL, canonical zero-order HAL, symmetric zero-order HAL,
+first-order package defaults, and the standardized canonical first-order
+wrapper. The first two draws also served as computational feasibility
+checks; these are exploratory comparisons, not an independent validation
+sample.
+
+The zero-order fits use main effects, pairwise interactions, and three
+interpolated quantile knots per coordinate. Gaussian responses are centered
+and divided by their standard deviation within each outer-training nuisance
+sample, with this scale held fixed across its inner folds. Penalty candidates
+are $0.003,0.01,0.03,0.1$ on that scale; predictions are restored to outcome
+units. Binomial candidates are $0.002,0.01,0.05,0.2$. Knots and zero-order
+canonical orientations are rebuilt within each inner training fold.
+First-order fits use the package's basis and penalty-selection defaults.
+Their canonical wrapper standardizes and orients covariates before package
+cross-validation, using only the outer-training covariates; ambiguous
+orientations are fitted and tuned separately, then averaged.
+
+Each nuisance specification supplies raw AIPW, prepared AIPW, and ATT TMLE.
+Preparation uses the same clipping and pooled calibration as the application,
+with the simulated sample's outcome range. TMLE is compared at step sizes
+$10^{-5}$ and $10^{-6}$ and must pass the same score and refinement checks.
+Absolute changes in ATT and its standard error compare corresponding
+codings within a draw. Bias, RMSE, and nominal interval coverage compare
+each estimator with the known ATT. Draws with nuisance warnings are retained
+and counted. Collection requires every draw to pass the targeting checks.
+These comparisons evaluate
+the quantile-knot procedures; they do not evaluate the observed-rank option.
+
+% Monte Carlo calculations: R/semisynth_report.R.
+Monte Carlo uncertainty uses independent draws as its units. Bias and mean
+absolute coding movement have standard errors equal to their across-draw
+standard deviations divided by $\sqrt R$, with $R=20$. Coverage has an exact
+binomial interval. Paired accuracy comparisons contrast canonical and default
+first-order fits, canonical and anchored zero-order fits, and symmetric fits
+with both zero-order alternatives. For paired errors $e_r$ and $u_r$, let
+$m=R^{-1}\sum_r e_r^2$ and $v=R^{-1}\sum_r u_r^2$. The MCSE of their mean
+squared-error difference is $\operatorname{sd}(e_r^2-u_r^2)/\sqrt R$.
+For $m>0$, the delta-method MCSE of RMSE is
+$\operatorname{sd}(e_r^2)/(2\sqrt{mR})$.
+For $m,v>0$, the delta-method MCSE of the log RMSE ratio is
+\[
+ \frac{1}{2\sqrt R}\operatorname{sd}
+ \left(\frac{e_r^2}{m}-\frac{u_r^2}{v}\right).
+\]
+Approximate ratio intervals use a $t_{R-1}$ critical value on the log scale
+and are then exponentiated. Undefined log-ratio uncertainty at zero empirical
+MSE is left unreported. These pointwise exploratory intervals describe
+Monte Carlo uncertainty in method comparisons, with no multiplicity
+adjustment. They are distinct from confidence intervals for the ATT.
+Twenty draws cannot establish
+calibrated coverage or a general accuracy ranking.
+
+The pilot reproduces coding sensitivity across repeated samples
+(Table~\ref{tab:semisynth-movement}). For first-order package nuisances,
+the mean absolute TMLE change under sign reversal is
+\$\CausalPilotDefaultMovement{} (MCSE \$\CausalPilotDefaultMovementMCSE{}).
+Both canonical procedures give identical ATT estimates and standard errors
+under the two codings for all three causal estimators. The symmetric
+zero-order procedure agrees to numerical precision; its largest TMLE
+movement is \CausalPilotSymmetricMaximum{} dollars. These comparisons
+measure the implemented procedures' invariance on the specified paired
+draws. They do not require one coding's estimate to be closer to the truth.
+
+\input{tables/semisynth_movement.tex}
+
+Accuracy comparisons depend on the causal estimator
+(Tables~\ref{tab:semisynth-tmle} and~\ref{tab:semisynth-comparisons}).
+For TMLE, canonical first-order fits have lower pilot RMSE than package
+defaults: their paired RMSE ratios and approximate 95\% Monte Carlo
+intervals are \CausalPilotFirstOriginal{} under the original coding and
+\CausalPilotFirstReversed{} under reversal. The same canonical nuisance
+fits have higher point RMSE for both AIPW variants, with ratio intervals
+including one. Symmetric and anchored zero-order TMLE have similar pilot
+RMSE: the corresponding ratios are \CausalPilotSymOriginal{} and
+\CausalPilotSymReversed{}. Canonical zero-order fits have higher RMSE
+than anchored fits under both codings for all three estimators.
+Nuisance convergence warnings remain in the first-order comparisons and
+are reported in the accuracy tables. These results establish no general
+accuracy ordering among invariant and noninvariant procedures.
+
+\input{tables/semisynth_tmle.tex}
+
+The raw oracle AIPW mean error in these draws is
+\$\CausalPilotOracleBias{} (MCSE \$\CausalPilotOracleMCSE{}), despite
+its conditional unbiasedness under the known-effect model. Substituting
+the saved true nuisances into identity~\eqref{eq:oracle-noise}
+reproduces that mean error. This realized imbalance reinforces the need
+to distinguish the exploratory pilot from the independent oracle
+benchmark and from a precise assessment of expected accuracy.
+Appendix~\ref{sec:causal-pilot-tables} reports both AIPW variants and
+all planned paired accuracy comparisons.
+
+\section{Zero-order dictionaries and estimators}
 
 Let $x \in \R^d$. For a \emph{section} $s \subseteq [d]$, a knot
 $u \in \R^{s}$ and an \emph{orientation} $o \in \{+,-\}^{s}$, define the
@@ -205,11 +761,20 @@ smallest $\ell_1$ norm over representations, with the constant unpenalized:
 \]
 with $V_{\mathcal{D}}(f) = \infty$ if no representation exists. Since
 $\mathcal{A} \subseteq \mathcal{S}$, $V_{\mathcal{S}} \le V_{\mathcal{A}}$.
-For $\mathcal{A}$ the representation is unique (the anchored features with
-distinct $(s,u)$ are linearly independent together with the constant), so
-$V_{\mathcal{A}}(f)$ is the $\ell_1$ norm of the coefficients; on
-$[0,1]^d$ with knots everywhere it is the sectional (Hardy--Krause)
-variation anchored at the lower corner \citep{vanderlaan2017}.
+On a full finite product grid, remove anchored atoms whose threshold in
+an active coordinate equals that coordinate's minimum: they duplicate a
+lower-dimensional atom or the constant. The resulting tensor dictionary
+is linearly independent together with the constant, so its representation
+is unique. With full interaction degree $D=d$, this finite-grid penalty is
+the discrete counterpart of Hardy--Krause variation anchored at the lower
+corner. For right-continuous functions of bounded Hardy--Krause variation
+on $[0,1]^d$, the continuum representation uses integrals against finite
+signed measures, with their total variation
+replacing coefficient sums and the constant unpenalized
+\citep{aistleitner2015,fang2021}. Simply allowing more knots in a finite
+coefficient sum does not define that continuum extension. Agreement of columns
+on a training sample alone does not imply equality of the represented
+functions away from that sample.
 
 Given data $(x_i, y_i)_{i=1}^n$ and a finite dictionary with design
 $X \in \R^{n \times p}$, the lasso estimator is
@@ -220,7 +785,316 @@ $X \in \R^{n \times p}$, the lasso estimator is
 HAL is \eqref{eq:lasso} on $\mathcal{A}$; \emph{symmetric HAL} is
 \eqref{eq:lasso} on $\mathcal{S}$.
 
-\section{What a box costs}\label{sec:cost}
+\section{Coding invariance}\label{sec:equiv}
+
+Let $R$ negate any subset of coordinates. A knot rule is reflection
+equivariant if applying it to $Rx$ gives the reflected knots. Type-7
+quantiles at probability levels closed under $p\mapsto1-p$ satisfy this
+condition. Require the retained \emph{functions}, not only their training
+columns or spans, to correspond bijectively under $\phi\mapsto\phi\circ R$.
+Filtering on the fraction of training observations where an atom is one
+preserves this correspondence. Keeping the first of several identical
+training columns need not preserve it.
+
+\begin{proposition}[Equivariant solution selection]\label{prop:equiv}
+Suppose the finite functional dictionaries before and after a recoding $T$
+correspond by a permutation $\pi$ satisfying
+$\phi^T_{\pi(j)}(Tx)=\phi_j(x)$ at every point, with the same coefficient
+penalties and a free intercept.
+For $\lambda>0$, first minimize \eqref{eq:lasso}, then minimize
+$\|\beta\|_2^2$ over its minimizers. The resulting coefficient vector and
+intercept are unique, and the fitted functions satisfy
+$\hat f^{T}(Tx)=\hat f(x)$ at every point, including points outside the
+training sample. The same statement holds for binomial negative
+log-likelihood when both response classes occur. Cross-validation preserves
+the result if folds, candidate penalties, and the rule for resolving equal
+validation losses are the same under the recoding, with an equivariant
+dictionary construction inside each training fold. For binomial fits,
+both response classes must occur in every training fold and in the final
+training sample.
+\end{proposition}
+
+\begin{proof}
+The recoding permutes the functional atoms and their coefficients. Both the
+primary objective and the secondary squared coefficient norm are unchanged
+by this permutation. Positive $\lambda$ bounds the penalized coefficients
+on a primary sublevel set. Gaussian loss, or binomial loss with both classes
+present, then bounds the intercept, so a primary minimizer exists. Strict
+convexity of the loss in the linear predictors makes the vector of fitted
+linear predictors unique. All primary minimizers therefore also have the
+same $\ell_1$ norm. Their coefficient vectors form a convex compact set,
+on which the strictly convex secondary norm has a unique minimizer; its
+intercept is determined by the fitted linear predictors. The permutation
+must map these unique solutions to one another. Held-out predictions and
+validation losses consequently agree, so a common deterministic tuning rule
+and refit preserve the conclusion.
+\end{proof}
+
+\begin{corollary}[Affine recodings]\label{cor:affine}
+Under the solution-selection and tuning conditions of
+Proposition~\ref{prop:equiv}, the ideal zero-order symmetric estimator
+underlying the implementation is equivariant under $\mathcal G_{\rm aff}$
+with exact arithmetic and exact primary and secondary minimization. This holds
+for the symmetric type-7 quantile probability grid, or for supplied knots
+transformed along with their covariates.
+\end{corollary}
+\begin{proof}
+For $b>0$, a type-7 sample quantile satisfies
+$q_p(a+bX)=a+bq_p(X)$. For $b<0$ it satisfies
+$q_p(a+bX)=a+bq_{1-p}(X)$. The chosen probability grid is closed under
+$p\mapsto1-p$, so its knot set transforms accordingly. Positive scales
+preserve an indicator's orientation; negative scales reverse it. The full
+functional dictionary is therefore permuted. The primary objective,
+secondary coefficient norm, and held-out validation losses are preserved,
+so the proof of Proposition~\ref{prop:equiv} applies.
+\end{proof}
+
+This result requires a solution-selection rule. The usual lasso guarantees
+unique training predictions, but may have several coefficient vectors
+\citep{tibshirani2013}; their predictions elsewhere can differ. For example,
+when training observations satisfy $x_1=x_2$, indicators on the two
+coordinates can agree on every training row but differ off that diagonal.
+Reflection can change which representative survives deduplication or which
+solution a coordinate-descent solver selects. Retaining all functional
+atoms resolves the first problem, but does not by itself resolve the second.
+
+The implementation retains the full degree-at-most-two dictionary. It solves
+the primary problem with \texttt{glmnet}, then minimizes coefficient norm
+on the equicorrelation/sign face with the training linear predictors fixed,
+using \texttt{quadprog}. Face construction accounts for primary numerical
+error. Full-dictionary optimality residuals, prediction residuals, and
+preservation of the primary $\ell_1$ norm and objective are checked; a
+solution that fails these checks is rejected. Numerical residuals are not
+universal bounds on held-out prediction error, which is checked separately
+under reflection in the examples and tests.
+
+\subsection{Canonical orientation as a simpler remedy}\label{sec:canonical}
+
+Dictionary closure is sufficient for invariance, but is not necessary.
+For a training sample $D$, let $m_j(D)$ depend only on coordinate $j$, be
+unchanged by row permutations, and change sign when that coordinate is
+reflected. An example is the
+centered third moment, divided by the cube of the largest absolute centered
+value; define it as zero for a constant column. Choose $s_j=\operatorname{sign}
+m_j(D)$ when this score is nonzero, and fit the anchored learner to
+$s\odot x$. Under a reflection $r$, the score and chosen direction both
+change by $r_j$, leaving the oriented training and prediction inputs identical.
+Any deterministic learner applied to these inputs therefore gives the same
+predictions. This argument does not require a symmetric dictionary.
+
+A fixed sign fallback at zero does not have that property. Instead, retain
+both signs for every ambiguous coordinate and average the resulting
+predictions. Under reflection the set of orientations is permuted, so the
+average is unchanged. This requires one fit when all coordinates have a
+nonzero score and up to $2^d$ fits when every coordinate is ambiguous.
+This is a finite-sign instance of averaging over an equivariant,
+data-dependent set of transformations, as in frame averaging
+\citep{puny2021}.
+For binomial outcomes, average probabilities. Our implementation treats
+absolute normalized scores at most $10^{-12}$ as ambiguous, recomputes
+orientations inside each validation training fold, and selects a common
+penalty from the averaged held-out loss. In exact arithmetic the ambiguity
+rule is reflection invariant; finite precision is assessed by prediction
+checks. This preprocessing changes the anchored estimator's orientation,
+whereas the symmetric dictionary changes its penalty by allowing components
+to use different orientations.
+The hard orientation rule can be discontinuous when its score crosses an
+ambiguity threshold. Equivariance under recoding therefore does not imply
+stability under small changes to the data, a distinction also emphasized
+in the canonicalization literature \citep{dym2024}.
+
+The same idea can wrap a first-order learner. Our first-order variant
+centers and scales each covariate within an outer training sample, chooses
+its canonical orientations, and fits the package-default learner separately
+in each orientation, using common inner folds. It averages response
+predictions, with separate penalty selection for each constituent fit.
+Preprocessing uses the whole outer training sample; it is not recomputed
+inside the package's inner folds. No outer held-out observations enter that
+preprocessing. For coordinates with positive training variance, centering
+and scaling remove affine recodings with nonzero scale up to sign in exact
+arithmetic. Canonical orientation removes the remaining sign change,
+conditional on deterministic fitting and common folds. This
+wrapper differs from the zero-order comparator's fold-local orientations
+and common-penalty ensemble tuning.
+
+\subsection{The stronger requirement of monotone invariance}
+
+Equivariance under $\mathcal G_{\rm ord}$ imposes an additional structural
+restriction on prediction between observations.
+\begin{proposition}[Prediction within observed gaps]\label{prop:ordinal-gaps}
+Let a deterministic predictor on $\mathbb R^d$ be pointwise equivariant
+under every coordinatewise strictly increasing bijection of $\mathbb R$.
+Fix its training sample, auxiliary randomness, and all but one query
+coordinate. Its prediction is constant on each open interval between
+successive distinct observed values of that coordinate, and on each of
+the two exterior intervals. More generally, it is constant on every
+Cartesian product of these intervals and singleton observed values.
+\end{proposition}
+\begin{proof}
+For two points in the same interval, there is a strictly increasing
+piecewise-linear bijection that maps one to the other and fixes every
+observed value. Apply this map in the selected coordinate and the identity
+in the others. The training sample is unchanged, so equivariance equates
+the predictions. Applying this argument one coordinate at a time proves
+the product statement.
+\end{proof}
+The restriction allows jumps at observed values and imposes no equality
+between a value and its neighboring open intervals. It is necessary, not
+sufficient: a predictor with these constant pieces can still use spacings
+to choose their heights. An interpolated knot can violate the necessary
+condition even when it leaves the training design unchanged.
+
+\begin{corollary}[Continuous predictions]\label{cor:continuous}
+Under the assumptions of Proposition~\ref{prop:ordinal-gaps}, if the
+fixed-sample predictor is continuous in each query coordinate, it is
+constant as a function of the query on $\mathbb R^d$. The constant may
+depend on the training sample and auxiliary randomness.
+\end{corollary}
+\begin{proof}
+On each coordinate line, continuity at every distinct observed value
+equates the constants on its two neighboring intervals with the prediction
+at that value. The predictor is therefore constant on the entire line.
+Changing coordinates one at a time proves constancy on $\mathbb R^d$.
+\end{proof}
+A nonconstant continuous spline predictor cannot meet this full pointwise
+monotone requirement. This does not preclude affine equivariance or smooth
+estimation generally. A nonconstant invariant rank-based predictor must
+instead be discontinuous somewhere in the original query coordinates;
+rank preprocessing alone does not ensure invariance. The connected query
+domain is essential: continuity on discrete or disconnected support need
+not join the pieces. The result concerns a finite-sample prediction rule,
+not information equivalence or identification of a population target.
+
+For a concrete algebraic example, take one covariate with training values
+$(0,2)$, outcomes $(0,1)$, three knots, and Gaussian penalty $\lambda=1/20$.
+The original knots are $(1/2,1,3/2)$. After the increasing bijection
+$T(x)=x^3$, type-7 knots are $(2,4,6)$, rather than the cubes of the original
+knots. Both training design matrices are identical. Their common
+minimum-norm lasso solution has intercept $1/2$ and coefficient $2/15$ on
+each upper indicator and $-2/15$ on each lower indicator. Its training
+predictions are $(1/10,9/10)$; the Gaussian KKT equations hold with
+equality. Any coefficient vector giving that fitted contrast has squared
+norm at least $(4/5)^2/6$ by Cauchy--Schwarz, and these coefficients attain it.
+Nevertheless, the original prediction at $3/4$ is $11/30$, while the
+recoded prediction at $T(3/4)$ is $1/10$. This is a failure of the stronger
+invariance requirement without any loss of information or optimization error.
+
+An order-statistic knot rule supplies a sufficient construction.
+\begin{corollary}[Monotone recodings]\label{cor:ordinal}
+For each training size $n$, fix a nonempty rank set
+$R_n\subseteq\{1,\ldots,n\}$, independently of the observed values, with
+$R_n=\{n+1-r:r\in R_n\}$. In coordinate $j$, use the distinct values in
+$\{W_{(r)j}:r\in R_n\}$ as knots, and include both closed indicator
+orientations for every retained section. Under the solution-selection
+and tuning conditions of Proposition~\ref{prop:equiv}, this ideal
+zero-order symmetric estimator is equivariant under $\mathcal G_{\rm ord}$.
+The rank rule is reapplied at each training-fold size. The conclusion
+allows tied observations and constant coordinates.
+\end{corollary}
+\begin{proof}
+For increasing $T_j$, the $r$th order statistic becomes $T_j(W_{(r)j})$;
+for decreasing $T_j$, it becomes $T_j(W_{(n+1-r)j})$. Rank reversal closure
+therefore makes the knot sets correspond, including when several selected
+ranks give the same value. Injectivity preserves equality, so removing
+repeated knot values commutes with the recoding. Increasing maps preserve
+the two indicator inequalities and decreasing maps exchange them. Products
+over unchanged coordinate sections thus give a permutation of the full
+functional dictionary. Proposition~\ref{prop:equiv} applies in every
+training fold and in the final fit.
+\end{proof}
+For example, when selecting central ranks in an even sample, retain both
+observed values rather than averaging them. Removing duplicate knot values
+is permissible; discarding distinct functions merely because their training
+columns agree is not covered. The implementation's
+\texttt{knot\_rule = "observed"} option uses
+\[
+ r_k=1+\left\lfloor\frac{(n-1)k}{q+1}\right\rfloor,\qquad
+ R_n=\{r_k,n+1-r_k:k=1,\ldots,q\}.
+\]
+For a requested count $q$, this gives at most $2q$ distinct knots per
+coordinate. The rule is rebuilt inside each training fold and in the final
+fit. Its ideal estimator satisfies the corollary; the interpolated-quantile
+default does not. With equivariant nuisance fitting,
+Proposition~\ref{prop:transfer} also gives invariance of downstream effect
+estimates and uncertainty under this larger family.
+
+The canonical comparator also changes under the stronger requirement.
+Its third-moment orientation statistic uses spacings, which an increasing
+nonlinear transformation can alter. An unsupervised marginal rule cannot
+simply discard spacings while retaining its usual single orientation.
+\begin{proposition}[Marginal ordinal orientations]\label{prop:ordinal-frame}
+Let a nonempty orientation set $S(x_1,\ldots,x_n)\subseteq\{-1,+1\}$
+be unchanged by row permutations and strictly increasing recodings, and
+satisfy $S(-x)=-S(x)$. If the observed values are distinct, then
+$S(x)=\{-1,+1\}$.
+\end{proposition}
+\begin{proof}
+For sorted values $x_{(1)}<\cdots<x_{(n)}$, construct a strictly increasing
+bijection $h$ with $h(x_{(i)})=-x_{(n+1-i)}$; piecewise-linear interpolation
+and increasing tails provide one. Then $h(x)$ is a row permutation of $-x$.
+The assumptions imply $S(x)=S(h(x))=S(-x)=-S(x)$. The only nonempty
+subset of $\{-1,+1\}$ with that property contains both signs.
+\end{proof}
+
+A Cartesian product of such marginal orientation sets consequently has
+$2^d$ elements when every coordinate has distinct observed values, as occurs
+almost surely for an i.i.d. sample from continuous marginals. By comparison,
+a symmetric dictionary
+with at most $m$ knots per coordinate and maximum interaction degree $D$
+has at most $1+\sum_{k=1}^D\binom{d}{k}(2m)^k$ columns including the
+intercept, polynomial in $d$ and $m$ for fixed $D$. This compares dictionary
+size with the cardinality of a marginal averaging construction. It is not
+a lower bound on all canonicalization algorithms: joint or outcome-informed
+rules, coincident fits, and shared computation fall outside that comparison.
+
+\subsection{Nominal categories}\label{sec:nominal}
+
+Arbitrary relabeling of nominal categories preserves information but can
+change the ordering used by threshold functions. Symmetry under reversal
+does not remove this dependence. Consider three levels $A,B,C$ coded
+$0,1,2$, with one observation per level and both indicator orientations
+at all three support values. This dictionary spans every function on the
+finite support. The minimum coefficient penalty for values on this support,
+with the intercept free, is
+\[
+ V(f)=|f_B-f_A|+|f_C-f_B|.
+\]
+Every nonconstant threshold atom has discrete total variation one, giving
+the lower bound; the two successive increments of $f$ attain it.
+
+With outcomes $(0,1,0)$ and $\lambda=1/18$ in the Gaussian
+objective~\eqref{eq:lasso}, the unique fitted values in $A,B,C$ order are
+$(1/6,2/3,1/6)$. Swap the numerical codes of $A$ and $B$, retaining the
+outcomes and all support values as knots. The support order is now $B,A,C$,
+and the fitted values in the original row order become
+$(1/12,5/6,1/12)$. To verify optimality, let $D$ take adjacent differences
+in support order. The KKT equation is
+$(f-y)/3+\lambda D^\top s=0$, with
+$s\in\partial\|Df\|_1$. The original solution satisfies it with
+$s=(1,-1)$; the recoded solution, expressed in $B,A,C$ order, satisfies it
+with $s=(-1,-1/2)$. Strict convexity in fitted values gives uniqueness.
+Both designs are saturated and every category is observed. The change is
+therefore a penalty effect, without information loss, off-sample ambiguity,
+or numerical optimization error. Arbitrary nominal-label invariance requires
+a construction that respects category permutations.
+
+One sufficient construction represents each nominal variable by the full
+vector of its category indicators, retaining a fixed category schema across
+training folds and prediction inputs. Relabeling then permutes input columns.
+If the same knot rule is applied to every column and all sections up to the
+specified degree are included, this induces a permutation of functional atoms.
+The coefficient penalties and minimum-norm selection are unchanged, so the
+same equivariance argument applies, including cross-validation with common
+folds and penalty candidates. This construction works for both anchored and
+symmetric dictionaries; its label invariance does not depend on reflection
+symmetry. It defines a different procedure from thresholding scalar category
+codes. It gives no guarantee for changing the omitted reference category in
+reduced indicator coding or for arbitrary contrast bases. The number of
+indicator columns also increases the dictionary's computational cost.
+
+\section{Penalty geometry}\label{sec:cost}
+
+\subsection{What a box costs}
 
 A box $B = \prod_{j \in s} I_j$ in section $s$ has, in each coordinate,
 an interval $I_j$ that is \emph{upper} ($[a_j,\infty)$), \emph{lower}
@@ -229,7 +1103,15 @@ the upper, lower and two-sided coordinates, $m+k+t=|s|$, with $|s| \le D$.
 Take the domain to be a finite grid $G = \prod_j G_j$, such as a lattice
 design or the observed values, with a knot at every grid point, so that
 $\one\{x_j > b\} = h_+(x_j - b^+)$ where $b^+$ is the next point of $G_j$
-above $b$; finite endpoints lie in $G$.
+above $b$; finite endpoints lie in their coordinate grids. First intersect
+each interval with its grid. If any intersection is empty, $f=0$. Delete
+coordinates whose interval covers the entire coordinate grid. Among the
+remaining coordinates, call an interval upper or lower if it touches only
+the top or bottom grid boundary, and two-sided if it touches neither.
+Thus each counted face is an observable jump with grid points on both
+sides. If no coordinates remain, the function is constant and both
+penalties are zero. The following statement concerns the remaining
+nonconstant, nonempty boxes.
 
 \begin{proposition}[Penalty of a box]\label{prop:box}
 For $f = c\,\one_B$ with $c \neq 0$,
@@ -258,8 +1140,7 @@ $|{\pm c}|$ over the non-constant terms.
 one-sided coordinate and $h_+(x_j - a_j) - h_+(x_j - b_j')$ for each
 two-sided one: $2^t$ features with coefficients $\pm c$.
 
-\emph{Lower bound.} Fix the coordinates outside $s$ at values inside $B$'s
-projection. On the resulting $|s|$-dimensional slice consider the grid
+\emph{Lower bound.} Fix the coordinates outside $s$ at arbitrary grid values. On the resulting $|s|$-dimensional slice consider the grid
 generated by the finite endpoints of $B$ and points just outside them, and
 the Vitali variation (sum over grid cells of the absolute $|s|$-th mixed
 difference). For $f = c\,\one_B$ it equals $|c|$ times the number of
@@ -274,6 +1155,282 @@ $V_{\mathcal{S}}(f) \ge 2^t |c|$ and, as $V_{\mathcal{A}} \ge V_{\mathcal{S}}$,
 the anchored lower bound in the case $k = 0$; for $k>0$ the anchored value
 was already exact.
 \end{proof}
+
+\subsection{Mixing orientations versus selecting an anchor}
+
+On a full finite product grid, work modulo constants and let $V_r$ denote
+the anchored penalty at corner $r\in\{+,-\}^d$. Then
+\begin{proposition}[Invariant convex penalty]\label{prop:convex}
+The symmetric penalty satisfies
+\[
+ V_{\mathcal S}(f)=\inf_{\sum_r f_r=f}\sum_r V_r(f_r).
+\]
+Its unit ball is the convex hull of the union of the anchored unit balls.
+It is the largest convex, positively homogeneous, reflection-invariant
+penalty dominated by the original anchored penalty. Here reflection means
+reversing the coordinate-grid order, which permutes the corners.
+\end{proposition}
+
+\begin{proof}
+Each oriented atom belongs to at least one global corner dictionary.
+Assign each atom in a symmetric representation to one such corner; this
+produces a decomposition whose summed anchored penalties are no larger
+than its coefficient norm. Conversely, combining anchored representations
+produces a symmetric representation at the summed cost. Taking infima
+gives the equality and the unit-ball description. If $P$ is convex,
+positively homogeneous, reflection invariant, and $P\le V_{+}$, then
+$P\le V_r$ for every corner. Hence $P(f)\le\sum_r V_r(f_r)$ for every
+decomposition, and $P(f)\le V_{\mathcal S}(f)$.
+\end{proof}
+
+The identity is an instance of the standard atomic-gauge construction for
+unions of atom sets \citep{vinyes2016}. Mixed-direction rules also appear
+in lasso rule ensembles \citep{friedman2008}. Here the statistical
+distinction is that
+mixing orientations can be cheaper than selecting any one global anchor.
+On $G=\{0,1,2,3\}^2$, let
+\[
+ f(x)=\one\{x_1\le1,x_2\le1\}+\one\{x_1\ge3,x_2\ge3\}.
+\]
+Two symmetric atoms give cost two, and the full-grid mixed variation is
+two, proving $V_{\mathcal S}(f)=2$. At either equal-sign corner, the
+anchored expansions have costs three and one; at either mixed-sign corner,
+they have costs two and two. The terms are distinct, so uniqueness of the
+reduced anchored expansion gives $V_r(f)=4$ at every corner. Thus
+$V_{\mathcal S}(f)<\min_r V_r(f)$. This is a representation-cost statement,
+not a prediction-risk comparison with anchor selection or averaging.
+
+Risk bounds for separate idealized estimators appear in
+Appendix~\ref{sec:rates}.
+
+\section{Computation}\label{sec:comp}
+
+The implementation fits Gaussian or binomial zero-order HAL with main
+effects and pairwise interactions. With $q$ distinct knots per
+coordinate, the symmetric dictionary has
+$2dq+4\binom{d}{2}q^2$ features, compared with
+$dq+\binom{d}{2}q^2$ in the anchored dictionary. No column is discarded
+merely because it is constant or duplicates another column on the training
+sample. The default and study knots are type-7 sample quantiles at probabilities
+$k/(q+1)$, $k=1,\ldots,q$, which commute with reflection in exact arithmetic.
+Both orientations include equality at a knot, so discrete covariates are
+covered by the same transformation argument.
+The observed-rank option instead uses the construction in
+Corollary~\ref{cor:ordinal}. Deterministic Gaussian and binomial tests check
+its validation predictions, selected penalties, and held-out predictions
+under nonlinear increasing and decreasing recodings. The empirical
+prediction and causal studies evaluate the quantile default, not this option.
+
+The primary objective uses an unpenalized intercept and unstandardized
+features. Gaussian loss is the mean squared residual divided by two;
+binomial loss is the mean negative log likelihood. Binomial primary fits
+follow a decreasing penalty path to
+the requested endpoint; intermediate penalties are computational warm starts
+and do not enter validation losses. The secondary quadratic
+program fixes the primary fitted linear predictors and minimizes coefficient
+norm on the lasso face. A full-dictionary certificate checks that omitted
+coordinates cannot improve the secondary solution. The implementation
+rejects failed convergence or optimality checks instead of silently
+returning an arbitrary primary solution.
+
+Cross-validation accepts an explicit positive penalty grid and explicit
+fold assignments. Each training fold constructs its own knot grid. Loss
+is averaged over all validation observations; among candidates within the
+specified loss tolerance of the minimum, the largest penalty is selected.
+Every binomial training fold must contain both outcomes. Reusing folds and
+penalties across codings is necessary for the equivariance comparison.
+
+The dense secondary problem is intended for small and moderate dictionaries.
+The implementation does not provide first-order splines, screening, or a
+scalable sparse quadratic solver. Optimality tolerances are absolute, so
+numerically difficult fits can fail even when a mathematical solution
+exists. Such failures are part of the feasibility assessment for larger
+experiments.
+
+\section{Reproducible examples}\label{sec:examples}
+
+The first example puts training observations on the diagonal,
+$x_i=(i,i)$ for $i=1,\ldots,21$, with outcome
+$y_i=\one\{i\ge11\}$. Prediction points $(1,21)$ and $(21,1)$ lie off
+that diagonal. This geometry makes nonunique representations consequential:
+training agreement alone does not determine the predictions of an
+arbitrarily selected lasso solution. We evaluate the minimum-norm estimator
+under all four sign codings, for both loss families, using three interior
+quantile knots per coordinate. Table~\ref{tab:example} reports the observed
+movement and optimality residuals for fixed and cross-validated penalties.
+
+\input{tables/example.tex}
+
+% Design constants specified in R/fig_coding.R.
+A second example draws $120$ independent uniform covariate pairs on $[-1,1]^2$
+with mean $2\one\{x_1\le-0.2,x_2\le-0.2\}$ and Gaussian noise of standard
+deviation $0.6$. Fits use three knots per coordinate, five shared folds,
+and penalties $0.01,0.03,0.1$. Predictions are evaluated on an evenly spaced
+$121\times121$ grid. Figure~\ref{fig:coding} shows the fitted error under each
+sign coding, with the same validation folds and penalty candidates. This
+is an illustration of the estimators' behavior on one data set, not an
+estimate of their comparative expected risk.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{../figures/coding.pdf}
+\caption{Fitted minus true value under four sign codings, evaluated on the
+original coordinate system. Rows use the anchored and symmetric dictionaries.
+The dashed box marks the signal region. Panel labels give mean squared error
+on the plotting grid. All panels use the same observations, validation folds,
+and penalty candidates. Both fits apply minimum-norm solution selection.}
+\label{fig:coding}
+\end{figure}
+
+\section{Prediction risk on common simulation draws}\label{sec:prediction}
+
+The prediction study gives mixed evidence about the value of the symmetric
+penalty. In the fixed-knot comparison with conflicting orientations, the
+ratio of symmetric mean risk to selected-anchor mean risk is
+$\PilotSelectedSmallRatio$ at $n=100$, with an approximate 95\% Monte Carlo
+interval $[\PilotSelectedSmallLower,\PilotSelectedSmallUpper]$, and
+$\PilotSelectedLargeRatio$ at $n=300$, with interval
+$[\PilotSelectedLargeLower,\PilotSelectedLargeUpper]$.
+The direction changes with sample size, and both intervals include equal
+risk. The exact representation-cost advantage therefore does not translate
+into a stable prediction advantage in this comparison.
+
+% Design constants and truth functions are specified in R/pilot.R and
+% R/pilot_run.R; estimates are generated by R/pilot_collect.R.
+The study uses \PilotReplicates{} draws in each of \PilotScenarios{}
+scenarios, totaling \PilotCases{} evaluations. The fixed-knot cases reuse
+the corresponding quantile-knot training samples and folds. Seven signals include
+upper, lower, and mixed orthants; an interior box; two boxes with conflicting
+orientations; additive steps; and a smooth signal. Their definitions are
+given in Appendix~\ref{sec:prediction-design}. The main grid crosses
+dimensions two and three, sample sizes $100$ and $300$, signal-to-noise
+ratios $0.5$ and $2$, and three covariate distributions. These are independent
+uniform coordinates; uniform margins from a Gaussian copula with latent
+pairwise correlation $0.5$; and five equally likely discrete levels. In the
+three-dimensional discrete case the third coordinate copies the second,
+creating coincident training columns. The signal depends only on the first
+two coordinates. Gaussian noise variance equals the signal variance divided
+by the specified signal-to-noise ratio.
+Signal variance is calculated exactly for independent and discrete
+covariates and estimated from a separate $200{,}000$-point calibration
+sample for correlated covariates.
+
+All HAL variants use degree-at-most-two indicators, three quantile knots
+per coordinate, five common validation folds, and penalty candidates
+$0.003,0.01,0.03,0.1,0.3$. Outcomes are centered and scaled using the full
+training sample for all HAL methods. Each validation training fold constructs
+its own knots. Anchor selection jointly chooses the corner and penalty by
+validation loss; ties favor the larger penalty and then the first corner
+in a fixed enumeration. Anchor averaging chooses a common penalty from
+the validation loss of the averaged predictions. Canonical orientation
+uses the fold-local procedure described above. All constituent HAL fits
+apply the same minimum-norm solution selection.
+
+Risk is integrated squared prediction error against the noiseless signal.
+For independent uniform and discrete covariates it is evaluated exactly;
+for correlated covariates it uses a fixed independent sample of $10{,}000$
+test points shared by methods and training replicates. Monte Carlo
+intervals describe variation over training draws, conditional on that test
+sample when numerical integration is used. They apply a paired delta method
+on the log ratio of mean risks and a $t_{19}$ multiplier. They are
+pointwise exploratory intervals, with no adjustment across scenarios.
+
+The fixed-knot comparison holds the cut points at $0.25,0.5,0.75$, uses
+independent uniform covariates in two dimensions, and sets the
+signal-to-noise ratio to two. The anchored and symmetric dictionaries then
+span the same functions almost everywhere under the covariate distribution.
+Table~\ref{tab:pilot-fixed} reports absolute risks. Against canonical
+orientation, symmetric risk ratios are $\PilotCanonicalSmallRatio$ and
+$\PilotCanonicalLargeRatio$ at the two sample sizes. Against anchor
+averaging they are $\PilotAveragedSmallRatio$ and
+$\PilotAveragedLargeRatio$. These comparisons do not select one remedy
+as uniformly preferable.
+
+\input{tables/pilot_fixed.tex}
+
+The full scenario results in Appendix~\ref{sec:prediction-design} show that
+some of the largest symmetric gains occur for discrete covariates. These
+cases can change the available function space as well as the penalty.
+For example, on support $\{0,0.25,0.5,0.75,1\}$ with knots
+$\{0.25,0.5,0.75\}$, upper indicators cannot distinguish $0.75$ from $1$;
+lower indicators can. Conversely, lower indicators alone cannot distinguish
+$0$ from $0.25$. The two-dimensional anchored design, including its
+intercept, has rank $16$ on the full support, whereas the symmetric design
+has rank $25$. Changing the global anchor changes which cells are merged.
+Thus these gains cannot be attributed solely to a cheaper representation
+of functions in a common span. Averaging anchors can access their combined
+span, but separately fitting and averaging them is a different estimator
+from jointly fitting the symmetric dictionary.
+In the three-dimensional discrete stress case, opposite orientations of the
+duplicated second and third coordinates can also expand a single global
+anchor's span. That case tests both numerical handling of coincident columns
+and the consequences of the available representation.
+
+Every final, cross-validated symmetric fit was checked under all coordinate
+reflections on the
+shared test points; the largest prediction movement was
+$\PilotMaxMovement$ outcome units. Canonical fits were checked under
+simultaneous reversal of every coordinate, with maximum movement
+$\PilotCanonicalMovement$. These numerical checks support coding
+reproducibility in the study. They do not establish lower expected risk or
+causal accuracy. Recorded fitting times include tuning and refitting under
+concurrent machine load and should not be read as isolated serial benchmarks.
+
+\section{Discussion}
+
+Coding conventions can affect a treatment-effect estimate through nuisance
+estimation. In this application, ATT targeting does not remove that
+sensitivity. The prediction-level construction provides a complementary
+result: a reflection-closed dictionary with minimum-norm solution selection
+makes fitted functions equivariant, including away from observed covariates.
+A downstream estimator that depends only on unchanged nuisance predictions,
+outcomes, treatment, and common fitting settings is then also unchanged.
+This implication does not require a claim of lower prediction error or
+better causal accuracy.
+
+The admissible recodings determine the construction. The ideal symmetric
+fit with interpolated quantile knots respects changes of units, origins,
+and signs, but can change under a nonlinear monotone recoding even when
+the training design is identical. An observed-order-statistic knot rule
+closed under rank reversal supplies the stronger monotone guarantee.
+The current third-moment canonical orientation uses spacings and does not
+share that guarantee. More broadly, a marginal orientation rule that ignores
+all increasing recodings must retain both signs on distinct observations
+if it also respects reversal. These distinctions arise before choosing a
+population model or evaluating prediction risk.
+
+The symmetric penalty permits components with different preferred anchors.
+An exact two-box example establishes a lower representation cost than any
+single global anchor. Canonical orientation, cross-validated anchor selection, and uniformly
+averaged anchor predictions provide alternatives. Canonical orientation
+already removes sign dependence when its ambiguous directions are averaged;
+its comparison with the symmetric fit concerns accuracy and computation. An oracle choice
+among individually tuned anchors can diagnose representation costs, but is
+unavailable to a practitioner. The penalty gap and fixed-lattice rate
+bound do not establish a prediction-risk advantage for the implemented
+estimator. The prediction study likewise finds no general advantage over
+the simpler alternatives, including in the fixed-knot mechanism comparison.
+Discrete-covariate gains can additionally reflect differences in dictionary
+span. Computational cost and performance on the target problem remain
+necessary criteria for choosing among invariant procedures.
+
+The observational application compares a specified first-order nuisance
+learner with and without canonical preprocessing. The wrapper removes the
+observed coding movement but retains convergence warnings. The zero-order
+equivariance theorem is a separate construction and does not apply directly
+to the package's spline basis. In the known-effect pilot, both canonical
+procedures agree exactly across the paired sign codings, while symmetric
+HAL agrees to numerical precision. Canonical first-order nuisances improve
+pilot TMLE RMSE but increase the point RMSE of both AIPW variants; symmetric
+and anchored zero-order TMLE have similar pilot RMSE. Thus causal accuracy
+depends on more than coding invariance. The small exploratory study and
+remaining nuisance warnings prevent a general accuracy or coverage claim.
+
+\clearpage
+\appendix
+\section{Risk bounds}\label{sec:rates}
+
+\subsection{A finite-dictionary oracle inequality}
 
 \begin{theorem}[Slow-rate oracle inequality]\label{thm:oracle}
 Let $y_i = f^*(x_i) + \varepsilon_i$ with fixed design and independent
@@ -314,554 +1471,168 @@ $\lambda$ differ by at most a factor
 $\sqrt{1 + D\log 2 / \log(2p_{\mathcal{A}}/\delta)}$.
 
 \begin{corollary}[Misoriented boxes]\label{cor:orient}
-If $f^* = c\,\one_B$ for an orthant $B$ with $k$ lower coordinates
-($t=0$, $m \ge 1$), the bound of Theorem~\ref{thm:oracle} is
+Suppose the design points lie in a finite product grid, both dictionaries
+contain all its grid knots and all sections up to degree $D$, and
+$f^*=c\,\one_B$ for a nonconstant, nonempty orthant satisfying the
+conditions of Proposition~\ref{prop:box}, with $|s|\le D$. Under the
+penalty conditions of Theorem~\ref{thm:oracle}, an orthant with $k$ lower
+coordinates ($t=0$, $m\ge1$) has centered empirical-error bounds
 $3\lambda_{\mathcal{A}} 2^k |c|$ for HAL and $3\lambda_{\mathcal{S}} |c|$ for
 symmetric HAL. For the lower orthant ($m=0$) the HAL bound is
-$3\lambda_{\mathcal{A}}(2^{|s|}-1)|c|$.
+$3\lambda_{\mathcal{A}}(2^{|s|}-1)|c|$, while the symmetric bound remains
+$3\lambda_{\mathcal{S}}|c|$.
+For a thinned knot set, the approximation term in
+Theorem~\ref{thm:oracle} must be retained unless the indicated box
+representation is still available.
 \end{corollary}
 
 \begin{remark}
 These are upper bounds; the corollary does not show that HAL's risk is
-larger. The simulations in Section~\ref{sec:sims} test whether the gap
-appears in risk.
+larger. Whether the penalty gap yields a practically useful risk reduction
+is an empirical question.
 \end{remark}
 
-\section{Coding invariance}\label{sec:equiv}
+\subsection{A lattice rate}
 
-Whether a covariate is recorded as $x_j$ or $-x_j$ (age or years to
-retirement, a dose or its distance from a maximum) is usually arbitrary.
-Let $R_j$ negate coordinate $j$. Call a knot rule \emph{reflection
-equivariant} if the knots computed from $R_j$-reflected data are the
-negated knots; sample quantiles at a set of probability levels closed under
-$p \mapsto 1-p$ qualify (for the type-7 quantile,
-$Q_{-x}(p) = -Q_x(1-p)$). Call a column filter reflection equivariant if
-it keeps a column exactly when it keeps its reflection; filters that act on
-the share of ones and on duplicate columns qualify, provided a column and
-its complement are treated alike.
-
-\begin{proposition}[Reflection equivariance]\label{prop:equiv}
-Let the knot rule and the column filter be reflection equivariant. Then the
-symmetric dictionary built from reflected data
-$\{(R_j x_i, y_i)\}$ spans, together with the constant, the reflections
-$\{\phi \circ R_j\}$ of the dictionary built from $\{(x_i, y_i)\}$, with
-the same penalty: $V_{\mathcal{S}}^{R_j\text{-data}}(f \circ R_j) =
-V_{\mathcal{S}}(f)$. Consequently the fitted values of symmetric HAL at any
-fixed $\lambda$ are identical on the two data sets, and when the lasso
-solution is unique the fitted functions satisfy
-$\hat f^{R_j} = \hat f \circ R_j$. The anchored dictionary has neither
-property.
-\end{proposition}
-
-\begin{proof}
-For a feature with $j \in s$,
-$\phi_{s,u,o}(R_j x) = \phi_{s,u',o'}(x)$ with $u'_j = -u_j$,
-$o'_j = -o_j$ and the other entries unchanged, because
-$h_{o_j}(-x_j - u_j) = h_{-o_j}(x_j + u_j)$. So $\phi \mapsto \phi \circ R_j$
-is a bijection between the dictionary features at knots $K$ and at knots
-$R_j K$ with orientations flipped in coordinate $j$; the symmetric
-dictionary contains both orientations, so it is mapped onto itself. This
-includes main effects: storing only $h_+$ main effects and relying on
-$h_-(x_j - u) = 1 - h_+(x_j - u^+)$ requires the next data value $u^+$
-above $u$ to be a knot, which fails when knots fall on tied data values,
-so the symmetric dictionary keeps both orientations of each main effect.
-Duplicate columns, and pairs of columns that sum to the constant, add no
-cheaper representations: $\beta_1\phi + \beta_2(1-\phi) = \beta_2 +
-(\beta_1 - \beta_2)\phi$ and $|\beta_1| + |\beta_2| \ge |\beta_1 - \beta_2|$,
-with the constant unpenalized. The equivariant knot rule and filter make the
-two retained column sets correspond under this bijection. The lasso
-objective depends on the design only through the column set (up to order)
-and the span of the unpenalized constant, so the two problems are the same
-problem after relabelling columns; lasso fitted values are unique
-\citep{tibshirani2013}, which gives the first consequence, and with a
-unique solution the coefficients correspond, which gives the second. For
-the anchored dictionary, $\one\{x_j \ge u\}\one\{x_l \ge v\}$ becomes a
-lower-orthant feature in coordinate $j$ after reflection, which the
-anchored dictionary represents only with three features
-(Proposition~\ref{prop:box}), so the penalties differ.
-\end{proof}
-
-The numeric check in the repository fits both estimators at a fixed
-$\lambda$ to data and to data with one coordinate negated: the symmetric
-fits agree to solver tolerance ($4 \times 10^{-7}$), while the anchored fits
-differ by up to $0.2$ on an outcome whose signal has range $1.5$.
-
-\section{Rates}\label{sec:rates}
-
-\citet{fang2021} study the constrained estimator
-$\hat f_{\mathcal{A},V} \in \argmin\{\sum_i (y_i - f(x_i))^2 :
-V_{\mathcal{A}}(f) \le V\}$ on the lattice design
-$\{(i_1/n_1, \ldots, i_d/n_d)\}$ with knots at all lattice points and
-$D = d$, and prove (their Theorem 4.5) that if $V \ge V_{\mathcal{A}}(f^*)$,
+Fix $d$, use the full product lattice
+$\{(i_1/n_1,\ldots,i_d/n_d):1\le i_j\le n_j\}$ with
+$n=\prod_j n_j$, all grid knots, and $D=d$. Assume independent
+$N(0,\sigma^2)$ errors with $\sigma>0$. For a fixed radius $V$, let
+$\hat f_{\mathcal D,V}$ minimize squared error subject to
+$V_{\mathcal D}(f)\le V$, with a free constant. For $V>0$ and
+$V_{\mathcal A}(f^*)\le V$, \citet[Theorem~4.5]{fang2021} prove
 \begin{equation}\label{eq:fgs}
-  \tfrac{1}{n}\mathbb{E}\textstyle\sum_i (\hat f(x_i) - f^*(x_i))^2
-  \le C_d \Big(\frac{\sigma^2 V}{n}\Big)^{2/3}
-  \Big(\log\big(2 + \tfrac{V\sqrt{n}}{\sigma}\big)\Big)^{\frac{2d-1}{3}}
-  + C_d \frac{\sigma^2}{n},
+ \frac1n\mathbb E\sum_i(\hat f_{\mathcal A,V}(x_i)-f^*(x_i))^2
+ \le C_d\left(\frac{\sigma^2V}{n}\right)^{2/3}
+ \left[\log\left(2+\frac{V\sqrt n}{\sigma}\right)\right]^{(2d-1)/3}
+ +C_d\frac{\sigma^2}{n}.
 \end{equation}
-with a matching minimax lower bound up to logarithmic factors over
-$\{V_{\mathcal{A}} \le V\}$ (their Theorem 4.6; theorem and lemma numbers refer to the arXiv version,
-1903.01395v3). Define
-$\hat f_{\mathcal{S},V}$ in the same way with $V_{\mathcal{S}}$.
+Numbering refers to arXiv:1903.01395v3.
 
 \begin{proposition}[Symmetric rate]\label{prop:rate}
-If $V \ge V_{\mathcal{S}}(f^*)$, $\hat f_{\mathcal{S},V}$ satisfies
-\eqref{eq:fgs} with $C_d$ replaced by a constant $C'_d$ depending only on
-$d$. Since $\{V_{\mathcal{A}} \le V\} \subseteq \{V_{\mathcal{S}} \le V\}$,
-the minimax lower bound of \citet{fang2021} applies to the symmetric class,
-so $\hat f_{\mathcal{S},V}$ is minimax rate optimal over it up to
-logarithmic factors.
+Under the preceding assumptions, if $V\ge V_{\mathcal S}(f^*)$,
+$\hat f_{\mathcal S,V}$ satisfies the bound in \eqref{eq:fgs} with a
+possibly different constant $C'_d$. If also $d\ge2$, $V>0$,
+$n_j\ge c_s n^{1/d}$ for some $c_s\in(0,1]$, and $n$ is sufficiently
+large depending on $d$, $\sigma^2/V^2$, and $c_s$, the minimax lower bound
+of \citet[Theorem~4.6]{fang2021} transfers to the symmetric class. The rate
+is therefore minimax optimal up to logarithmic factors under those conditions.
 \end{proposition}
 
 \begin{proof}
-The proof of \citet[Section~8.4]{fang2021} uses two facts about the
-constraint set $C(V) = \{(f(x_1), \ldots, f(x_n)) : V_{\mathcal{A}}(f) \le V\}$:
-it is closed and convex, and its intersection with a Euclidean ball,
-$C(V, t) = C(V) \cap B_2(0, t)$, has covering numbers bounded as in their
-Lemma 8.6,
+Expanding an oriented atom of degree at most $D$ in the reduced anchored
+dictionary gives total nonconstant coefficient norm at most $2^D-1$.
+A lower indicator uses its successor grid knot; constants and empty atoms
+are removed first. Thus, with $c_d=2^d-1$,
 \[
-  \log N(\epsilon, C(V, t)) \le C_d \Big(\big(\tfrac{V\sqrt{n}}{\epsilon}
-  \big)^{1/2} + 1\Big)\Big(\log\big(\tfrac{2V\sqrt{n}}{\epsilon} + 1\big)
-  \Big)^{d - \frac12} + \log\Big(2 + 2\,\tfrac{t + V\sqrt{n}}{\epsilon}\Big).
+ V_{\mathcal S}\le V_{\mathcal A}\le c_d V_{\mathcal S}.
 \]
-The rest of their argument depends on $C(V)$ only through this bound. The
-symmetric set $C_{\mathcal{S}}(V)$ is closed and convex (an $\ell_1$ ball
-image plus the constant direction). For an orientation pattern
-$r \in \{+,-\}^d$, the features with orientation $r$ on their section
-are, on the lattice, the anchored features composed with the reflection
-that reverses the lattice index in the coordinates where $r_j = -$, after
-the knot relabelling of Proposition~\ref{prop:equiv}; that reflection is a
-permutation $P_r$ of the $n$ coordinates. Group the terms of any
-representation by orientation pattern and give the whole constant to
-$r = (+,\ldots,+)$. Then every $\theta \in C_{\mathcal{S}}(V) \cap B_2(0,t)$
-is $\sum_r P_r \theta_r$ with $\theta_r \in C(V)$; for
-$r \neq (+,\ldots,+)$, $\theta_r$ has no constant term, so
-$\|\theta_r\|_\infty \le V$ and $\|\theta_r\|_2 \le V\sqrt{n}$, and hence
-the constant-carrying component has $\|\theta_{+}\|_2 \le
-t + 2^d V\sqrt{n}$. Permutations preserve Euclidean covering numbers, and
-an $\epsilon 2^{-d}$-cover of each of the $2^d$ pieces gives an
-$\epsilon$-cover of the sum, so
+Write $C_{\mathcal D}(V)$ for the corresponding set of lattice value
+vectors and $C_{\mathcal D}(V,t)=C_{\mathcal D}(V)\cap B_2(0,t)$.
+These sets are closed and convex. If $\theta^*$ belongs to
+$K=C_{\mathcal S}(V)$, the triangle inequality gives
 \[
-  \log N(\epsilon, C_{\mathcal{S}}(V, t)) \le 2^d
-  \log N\big(\epsilon 2^{-d}, C(V, t + 2^d V\sqrt{n})\big).
+ (K-\theta^*)\cap B_2(0,t)
+ \subseteq C_{\mathcal S}(2V,t)
+ \subseteq C_{\mathcal A}(2c_dV,t).
 \]
-Substituting Lemma 8.6 changes only constants and the argument of the
-last logarithm, which enters the final bound only through a term of order
-$t\sqrt{\log(4 + c_d V\sqrt n / t)}$, as in their proof. Following their
-argument with this bound gives \eqref{eq:fgs} with a new constant.
+This bounds the localized Gaussian width of $K$ by the quantity used in
+\citet[Section~8.4]{fang2021}, with radius $V$ replaced by $c_dV$.
+Their Lemma~8.6 states
+\begin{align*}
+ \log N(\epsilon,C_{\mathcal A}(V,t))
+ &\le C_d\left(\frac{V\sqrt n}{\epsilon}+1\right)
+ \left[\log\left(\frac{2V\sqrt n}{\epsilon}+1\right)\right]^{d-1/2}\\
+ &\quad+\log\left(2+2\frac{t+V\sqrt n}{\epsilon}\right).
+\end{align*}
+Applying their entropy integration and projection-risk theorem (Theorem~8.1)
+to the localized width gives \eqref{eq:fgs} with $c_dV$ in place of $V$.
+For fixed $d$, absorb $c_d$ and the resulting change inside the logarithm
+into $C'_d$. This argument transfers a width bound; it does not infer an
+ordering of estimator risks from inclusion of constraint sets. If $V=0$,
+the truth and estimate are constant on the lattice and the risk is
+$\sigma^2/n$.
+
+For the lower bound, $C_{\mathcal A}(V)\subseteq C_{\mathcal S}(V)$,
+so a worst-case risk lower bound on the former applies to the latter.
+The balanced-lattice and sample-size conditions above are those of
+\citet[Theorem~4.6]{fang2021}. Their lower bound has logarithmic exponent
+$2(d-1)/3$, strengthened to one for $d=2$.
 \end{proof}
 
-Combining Propositions~\ref{prop:box} and~\ref{prop:rate}: for a lower
-orthant box in a $|s|$-dimensional section, the oracle-tuned anchored
-bound is $(2^{|s|}-1)^{2/3}$ times the symmetric bound in its leading term,
-$2.08$ for $|s| = 2$, and $2^{2k/3}$ times for an orthant with $k < |s|$
-lower coordinates, $1.59$ for $k = 1$. As with Corollary~\ref{cor:orient}
-these compare upper bounds. \citet{fang2021} also prove a near-parametric
-rate for the anchored estimator on indicators of upper-right rectangles
-(their Theorems 4.7 and 6.1). We do not prove the reflected statement for
-$\hat f_{\mathcal{S},V}$, whose tangent cones differ.
+This result concerns a fixed-radius constrained estimator on a full lattice.
+It does not establish rates for the cross-validated fixed-knot implementation
+or for first-order HAL. Constants depend on dimension;
+the result is not a guarantee for increasing $d$. The box costs affect the
+variation-dependent terms in oracle bounds, but differing constants and
+logarithms prevent a numerical comparison of the complete bounds. No risk
+dominance follows. The near-parametric adaptation results for anchored
+upper-right rectangles in \citet{fang2021} are not proved here for the
+symmetric estimator, whose tangent cones differ.
 
-\section{Computation}\label{sec:comp}
+\clearpage
+\section{Nuisance and outcome-bound sensitivity}
+\input{tables/causal_sensitivity.tex}
 
-The symmetric dictionary has $2^{|s|}$ times as many features as the
-anchored one in each section $s$; for main effects the extra orientation
-matters only when knots fall on tied data values, but it is needed there
-for exact equivariance. With the screening HAL already applies (drop indicators that
-are nonzero for fewer than $\sqrt{n}$ observations), at $n = 500$, $d = 10$,
-nine knots per coordinate and $D = 2$, the anchored dictionary has $3{,}389$
-columns and the symmetric one $13{,}368$. The estimator is an ordinary lasso
-on that design; we use \texttt{glmnet} with cross-validated $\lambda$ and no
-standardization, so the coefficient $\ell_1$ norm is the penalty of
-Section~\ref{sec:cost}. No new software is needed: \texttt{hal9001}
-accepts a user-supplied basis, and on the design $(x, -x)$ its indicator
-$\one\{-x_j \ge -u\}$ is $h_-(x_j - u)$, so passing it the symmetric basis
-with each lower-sided coordinate moved to the negated copy fits symmetric
-HAL with all of its families and tuning options. The accompanying code does
-this and checks that the fitted values match the direct lasso.
+\clearpage
+\section{Causal-pilot accuracy comparisons}\label{sec:causal-pilot-tables}
 
-\section{Simulations}\label{sec:sims}
+The following tables use the same \CausalPilotDraws{} draws as the coding
+movement and TMLE results. Raw AIPW uses the unprepared outcome predictions
+and propensity estimates with the specified cap. Prepared AIPW uses the
+same initial clipping and pooled propensity calibration as TMLE. Each
+accuracy comparison pairs learners within a draw and coding. All nuisance
+warnings are retained. Coverage intervals describe Monte Carlo uncertainty
+in the observed coverage fraction; the small pilot does not validate
+nominal coverage.
 
-\paragraph{Design.} Covariates are $d = 10$ independent uniforms on
-$[-1,1]$, $n = 500$, and Gaussian noise is set to signal-to-noise ratios
-(signal variance over noise variance) from $0.05$ to $4$, with 50
-replicates per cell. The regression functions are a $2$-D box of height $2$
-in each orientation (upper, mixed and lower orthant, and interior), a sum of
-eight boxes in random orthant orientations, a depth-two tree, an additive
-step function whose three steps all switch on as their covariate increases,
-XOR, and Friedman's smooth function. Methods: HAL, symmetric HAL, both also
-with a relaxed refit, and, as references, CART pruned by cross-validation and
-a random forest. Both dictionaries use nine sample-quantile knots per
-coordinate, degree $D = 2$ and the same screening; $\lambda$ is chosen by
-10-fold cross-validation. Risk is measured on 2{,}000 fixed test points and
-reported relative to the risk of the constant predictor; comparisons between
-methods are paired within replicate.
+\input{tables/semisynth_aipw_raw.tex}
+\input{tables/semisynth_aipw.tex}
+\input{tables/semisynth_comparisons.tex}
 
-\paragraph{Predictions stated before the runs.} (i) Symmetric HAL and HAL tie
-on the upper-orthant and interior boxes, where Proposition~\ref{prop:box}
-gives equal penalties. (ii) Symmetric HAL wins on the mixed and lower boxes,
-by more on the lower box. (iii) Symmetric HAL does equally well on a box and
-on its reflection (Proposition~\ref{prop:equiv}).
+\clearpage
+\section{Prediction-study design and results}\label{sec:prediction-design}
 
-\paragraph{Results.} Table~\ref{tab:tier1_ratio} gives the median risk ratio
-of symmetric HAL to HAL and Figure~\ref{fig:orientation} every replicate.
-Prediction (ii) holds: on the lower box symmetric HAL's risk is $0.44$ times
-HAL's at signal-to-noise $0.25$, and on the mixed box $0.59$ times, and it is
-lower in every replicate at signal-to-noise $0.25$ to $4$. The gap is largest
-at moderate noise and narrows at both ends, where either both fits are close
-to the constant or both have enough data to pay for the extra terms.
+The seven regression functions, on covariate support $[0,1]^d$, are
+\begin{align*}
+ f_{\mathrm{upper}}(x)&=\one\{x_1\ge0.75,x_2\ge0.75\},\\
+ f_{\mathrm{lower}}(x)&=\one\{x_1\le0.25,x_2\le0.25\},\\
+ f_{\mathrm{mixed}}(x)&=\one\{x_1\ge0.75,x_2\le0.25\},\\
+ f_{\mathrm{interior}}(x)&=\one\{|x_1-0.5|\le0.25,|x_2-0.5|\le0.25\},\\
+ f_{\mathrm{conflicting}}(x)&=f_{\mathrm{lower}}(x)+f_{\mathrm{upper}}(x),\\
+ f_{\mathrm{additive}}(x)&=\one\{x_1\ge0.25\}+2\one\{x_2\le0.75\},\\
+ f_{\mathrm{smooth}}(x)&=\sin(2\pi x_1)+4(x_2-0.5)^2.
+\end{align*}
+The following figures show all quantile-knot scenarios. Ratios below one
+favor symmetric HAL. Each interval is an approximate 95\% Monte Carlo
+interval for a ratio of mean risks over paired training draws. Lines
+connect the two sample sizes within each comparator and signal-to-noise
+ratio. Risk uses exact integration for independent uniform and discrete
+covariates and common test points for correlated covariates. CART and
+random-forest comparisons are available in the accompanying data; those
+comparisons use the same Monte Carlo test risk for both methods, including
+where exact integration is available for HAL.
 
-Prediction (i) fails. On the upper box HAL is better at every
-signal-to-noise ratio, by $3$ to $18\%$ in median risk; on the interior box
-symmetric HAL is better at low signal-to-noise and $18$ to $20\%$ worse at
-high. Both boxes cost the same in the two dictionaries, so the difference is
-the price of a dictionary four times larger in the interactions, which
-Theorem~\ref{thm:oracle} sees only through a logarithmic factor. The relaxed
-refit, which removes the lasso's shrinkage from the selected terms, removes
-most of this price: the relaxed fits tie on the upper box from
-signal-to-noise $0.5$ upward (ratio $1.00$). The additive truth behaves like
-the upper box, as its steps all face HAL's anchor, with symmetric HAL up to
-$15\%$ worse. Where no orientation is privileged, symmetric HAL is better:
-on the eight randomly oriented boxes its risk is $0.64$ times HAL's at high
-signal-to-noise, on the tree $0.73$ to $0.97$ times, on XOR $0.61$ to $0.95$
-times, and on Friedman's smooth function within $7\%$ either way.
-
-Prediction (iii) holds for each data set but cannot be read off the risk
-distributions. Fitting the upper box and its exact mirror image (data and test
-points reflected) gives the same risk up to solver tolerance (three
-replicates at signal-to-noise $2$: $0.0912$ and $0.0912$, $0.1669$ and
-$0.1671$, $0.1354$ and $0.1354$), as Proposition~\ref{prop:equiv}
-requires. The lower-box risks in the grid are higher than the upper-box ones
-at high signal-to-noise because the same test points are used for both and
-they are not mirror symmetric: at high signal-to-noise the error sits in thin
-bands along the box edges, which contain few test points.
-
-The references behave as expected from their structure
-(Appendix Figure~\ref{fig:all_methods}). CART, which needs
-only two splits for a box, has lower risk than relaxed symmetric HAL on the
-single boxes and the tree at most signal-to-noise ratios; on the eight boxes,
-XOR and Friedman's function it is worse, by up to a factor of $6$ at high
-signal-to-noise. Symmetric HAL
-took a median of $8$ seconds per fit, HAL $4$.
-
-\input{tables/tier1_ratio.tex}
-
-\begin{figure}[!h]
+\newcommand{\pilotfigure}[2]{%
+\clearpage
+\begin{figure}[p]
 \centering
-\includegraphics[width=\textwidth]{../figures/tier1_p1_orientation.pdf}
-\caption{Log risk ratio of symmetric HAL to HAL in each of 50 replicates
-(points) and its median (red), by true function and signal-to-noise ratio.
-Below zero, symmetric HAL is better.}
-\label{fig:orientation}
-\end{figure}
-
-\section{Recoding real covariates}\label{sec:real}
-
-The propositions say the coding matters for HAL; this section measures how
-much on real data. For each data set we take the original coding and 20
-random recodings, each negating every covariate independently with
-probability $1/2$, and refit HAL and symmetric HAL with everything else
-held fixed: the same knot rule, the same cross-validation folds, and the
-same test split. A negated covariate carries exactly the information the
-original did, so any change in the output is due to the coding alone. We
-use a tight solver tolerance (\texttt{glmnet} threshold $10^{-12}$); at the
-default tolerance, near-ties in the cross-validation curve let equivalent
-codings select different $\lambda$, which is a solver artefact rather than a
-property of the estimator.
-
-\paragraph{Prediction.} Boston housing (13 covariates, median home value)
-and Los Angeles ozone (9 covariates, daily maximum ozone) are split once
-into 70\% training and 30\% test rows. Table~\ref{tab:recode_predictions}
-reports, for each test point, the spread of its prediction across the 21
-codings. Under HAL a typical test prediction moves by $0.11$ outcome
-standard deviations across codings, and some move by more than one
-standard deviation. Test error ranges from $2.59$ to $3.26$ on Boston and
-from $4.82$ to $5.59$ on ozone, depending only on which way the covariates
-point. Symmetric HAL's predictions agree across codings to within
-$0.003$ standard deviations, the residual being solver tolerance. Its test
-error sits near the median of HAL's: the coding-free estimator is not more
-accurate than a typical coding, and the best coding of HAL is better on
-Boston. That coding cannot be picked without the test set, and no analyst
-would think to search for it.
-
-\input{tables/recode_predictions.tex}
-
-\paragraph{A treatment effect.} The case that motivates the paper is HAL
-as a nuisance estimator, and the classic test of a nuisance estimator is
-\citet{lalonde1986}'s: estimate the effect of a job-training program from
-observational data and compare the answer with the program's own randomized
-experiment. We use the \citet{dehejia1999} sample of the National Supported
-Work (NSW) program: 185 trainees, whose experimental control group of 260
-gives an effect on 1978 earnings of \$1{,}794 (standard error \$671), and
-2{,}490 non-experimental comparison individuals from the Panel Study of
-Income Dynamics (PSID-1). The covariates are age, education, two race
-indicators, marital status, no high-school degree, and 1974 and 1975
-earnings. The target is the average effect on the treated, estimated by the
-cross-fitted augmented inverse-probability-weighted estimator
-\citep{chernozhukov2018} over five folds: the outcome regression is fit on
-the comparison group, the propensity score on everyone, the latter capped at
-$0.99$, and each nuisance function is tuned by cross-validation on folds that
-are fixed across codings.
-
-We fit the nuisance functions four ways. Most applied work runs
-\texttt{hal9001} with its defaults, which in the current CRAN release
-(0.4.6) are first-order HAL: one-sided
-hinges $(x_j - u)_+$ and their products up to degree three, with 50, 25 and
-12 knots per coordinate for degrees one to three. The symmetric first-order
-fit adds the reflected hinges $(u - x_j)_+$ through the route of
-Section~\ref{sec:comp}, with knots placed at quantiles that are symmetric
-under negation (\texttt{hal9001} places its knots at quantiles of the
-lower $98\%$ of each covariate, which a recoding moves). The zero-order fits
-are those of Section~\ref{sec:sims}.
-
-Table~\ref{tab:lalonde_att} and Figure~\ref{fig:lalonde_att} give the 19
-distinct codings (two of the 20 random sign patterns repeated). With the
-default fits the estimate runs from $-\$16{,}526$ to \$1{,}849, a range of
-$18$ standard errors; leaving out the most extreme coding it still runs from
-$-\$5{,}240$ to \$1{,}849, and it is negative in 9 of the 19 codings. The
-coding moves the propensity fit as well as the outcome fit: in three
-codings, including the original one, some comparison individual reaches the
-$0.99$ cap, and the standard error triples. Zero-order HAL is less
-sensitive, from \$451 to \$3{,}551 (2.6 standard errors). Both symmetric
-estimators are flat: \$1{,}852 to \$1{,}903 with first-order fits, and
-\$2{,}800 in every coding with zero-order fits. The symmetric first-order basis is the same set of columns in every
-coding (we check this on these data), so by the argument of
-Proposition~\ref{prop:equiv}
-the exact fit is too, and the remaining spread, $0.05$ standard errors, is
-the solver's convergence tolerance; we keep \texttt{glmnet}'s default tolerance for these fits
-because a tighter one stops the cross-validation path early.
-
-This is evidence about coding, not about which estimator is right. The
-symmetric first-order estimate is \$79 from the experimental benchmark and
-the zero-order one \$1{,}006 from it, but the benchmark's own standard
-error is \$671, and agreement with one experiment is weak evidence of
-accuracy: these data are notorious for estimates that change with the
-specification \citep{smith2005}. Removing the dependence on coding fixes
-one of the specification choices; it does not make the remaining ones
-right. Section~\ref{sec:semisynth} measures bias and variance where the
-truth is known.
-
-\input{tables/lalonde_att.tex}
-
-\begin{figure}[!h]
-\centering
-\includegraphics[width=\textwidth]{../figures/lalonde_att.pdf}
-\caption{Estimates of the effect of NSW training on 1978 earnings of the
-trainees, from the trainees and the PSID-1 comparison group, with 95\%
-intervals, under the original coding (1) and 18 further distinct sign
-codings of the covariates. Blue: the experimental estimate and its 95\%
-interval. Codings are sorted by the default \texttt{hal9001} estimate; one
-estimate lies off the scale and is labelled.}
-\label{fig:lalonde_att}
-\end{figure}
-
-Units are a coding too. First-order hinges $(x_j - u)_+$ carry the units
-of $x_j$, and \texttt{hal9001} turns off \texttt{glmnet}'s standardization,
-so the penalty on a hinge depends on whether earnings are in dollars or
-thousands. Table~\ref{tab:lalonde_units} refits the original sign coding
-with age in months and both earnings in thousands of dollars. The default
-estimate moves from \$1{,}181 to \$47{,}975, with a standard error of
-\$49{,}796. The symmetric
-first-order estimate moves by \$158, $0.14$ standard errors. Dividing each
-covariate by its standard deviation before forming the hinges makes the
-covariates free of units, and the estimate is \$1{,}639 in both.
-
-\input{tables/lalonde_units.tex}
-
-\section{Bias and variance with a known effect}\label{sec:semisynth}
-
-LaLonde's comparison has one experiment to check against. To measure bias,
-variance and coverage we keep the LaLonde covariates and replace the
-treatment and the outcome with draws from known functions fitted to the
-same data. Each replicate resamples the 2{,}675 trainees and comparison
-individuals with replacement, draws treatment from the \citet{dehejia1999}
-propensity logit (age and its square, education, the race, marital and
-degree indicators, both earnings, and indicators of zero earnings in each
-year), capped at $0.95$, and draws 1978 earnings as a fitted function of
-the covariates for the comparison group (natural splines in age and both
-earnings, the indicators, and the zero-earnings steps; $R^2 = 0.57$), plus
-\$1{,}800 for the treated, plus Gaussian noise with the residual standard
-deviation, \$10{,}190. About 180 individuals per replicate are treated, as
-in the data, and the raw difference in mean earnings is around
-$-\$14{,}000$, so the confounding is as severe as in the original. The
-effect on the treated is \$1{,}800 by construction, and since the effect is
-constant and the noise homoskedastic, the efficiency bound for the
-estimator's standard deviation is
-$\sigma \{E[g/(1-g)]\}^{1/2} / (p \sqrt{n})$, where $g$ is the propensity
-score and $p$ the share treated, about \$2{,}300.
-
-Each replicate is estimated twice, under the original coding and with the
-four continuous covariates (age, education and both earnings) negated, with
-the estimator and folds of Section~\ref{sec:real} and nuisance fits from
-default \texttt{hal9001} and from symmetric first-order HAL. The two
-codings carry the same information, so an estimator's answer should not
-depend on which one it is given; across replicates we also get each
-estimator's bias, its standard deviation against the bound, and the
-coverage of its 95\% interval.
-
-Table~\ref{tab:semisynth} and Figure~\ref{fig:semisynth} give 66
-replicates. With the default fits the coding decides whether the estimator
-works. Under the original coding it is biased by $-\$2{,}058$ (Monte Carlo
-standard error about \$150), and its 95\% interval covers the truth in
-$36\%$ of replicates. Its standard deviation, \$1{,}207, is half the
-efficiency bound, below what any regular estimator can attain
-asymptotically: the estimate is precise about the wrong number, and its standard error, which matches that
-spread, cannot reveal the bias. Negating the four continuous covariates
-removes the bias ($\$97$) and restores coverage ($94\%$) but makes the
-estimator $1.3$ times as variable as the bound. Within a replicate the
-estimate moves by a median of \$2{,}014 between the two codings, more than
-the effect itself. With symmetric first-order fits the bias is
-$-\$17$ and $-\$19$ in the two codings (Monte Carlo standard error about
-\$270), the standard deviation is $0.95$ times the bound, coverage is
-$97\%$, and the median move between codings is \$11. A standard deviation
-at or slightly below the bound is within Monte Carlo error of it (the ratio
-is estimated to about $\pm 9\%$); the cap on the estimated propensity score
-can also trim variance at the cost of a little bias.
-
-\input{tables/semisynth.tex}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\textwidth]{../figures/semisynth.pdf}
-\caption{Semi-synthetic LaLonde: estimates of the effect on the treated in
-66 replicates, under the original coding and with the continuous covariates
-negated; lines join the two estimates from the same replicate. Blue: the
-true effect, \$1{,}800; red: the mean.}
-\label{fig:semisynth}
-\end{figure}
-
-\section{How common is coding dependence?}\label{sec:audit}
-
-HAL is not the only estimator whose fit depends on how the covariates are
-written down. An estimator is unaffected by a recoding when the recoding
-maps its whole fitting problem onto itself: the loss, the penalty, the
-candidate splits or knots, and the tuning. Least squares passes for any
-invertible linear recoding, since only the span of the design matters. A
-penalty adds a condition: the lasso and ridge penalties are unchanged when
-a coefficient changes sign, so negating a covariate is harmless, but not
-when a column is rescaled, which is why they are fit to standardized
-columns. A fixed convention for where knots or bins go adds another.
-
-We refit 18 estimators, each with its package defaults, on the Boston
-split of Section~\ref{sec:real} under recodings that carry the same
-information: the eleven continuous covariates negated, negated about their
-maximum (as when age becomes years to retirement), shifted, or put in
-other units, and the reference level of the one categorical covariate, a
-nine-level index of highway access, changed. Table~\ref{tab:audit} gives
-how far test predictions move. As a yardstick for the randomized
-estimators, the last column refits the original coding with a new seed.
-
-\input{tables/audit.tex}
-
-Least squares, with or without interactions, the additive model and CART
-are unaffected by every recoding. The random forest and BART move under
-recodings about as much as under a new seed, as expected of estimators
-that are invariant in distribution but not draw by draw. The other
-estimators fail in four ways.
-
-\emph{One-sided bases.} Both HALs move under negation, by a median of
-$0.13$ standard deviations. So does MARS as implemented in \texttt{earth},
-by $0.12$, even though MARS uses reflected pairs of hinges: with five
-terms, the original and the negated fits choose the same covariates but
-put the knots at different data values ($6.421$ and $6.411$ rooms;
-$6.07\%$ and $5.98\%$ lower-status population), and with more terms the
-fits diverge. It also moves, by $0.08$, under a change of units.
-
-\emph{Binning.} Gradient boosting in \texttt{xgboost} moves under negation
-by a median of $0.04$ and up to $1.5$ standard deviations. Its default
-tree method splits on histogram bins of each covariate; with the exact
-method the median change is $0$ and the largest $0.11$, a test point that
-falls between two training values.
-
-\emph{Penalized interactions.} The lasso with all pairwise products is
-unaffected by negation, which only flips the sign of a product, but moves
-by $0.10$ standard deviations when the covariates are shifted. Shifting
-$x_1$ by $c$ turns $x_1 x_2$ into $x_1 x_2 + c x_2$: the span is the same,
-but the penalty charges the interaction differently, so the selected
-model depends on where the origin is \citep{bien2013}. First-order HAL
-has the same problem with units, the largest movement in the table: its
-hinges $(x_j - u)_+$ are measured in the units of $x_j$, and
-\texttt{hal9001} turns off \texttt{glmnet}'s standardization, so a covariate
-in hundreds is penalized differently from one in units. Zero-order
-indicators are free of units.
-
-\emph{Dummy coding.} Every estimator that penalizes or measures distances
-on treatment-coded dummies depends on the reference level: ridge, lasso
-and elastic net, the lasso with interactions, nearest neighbours and the
-support vector machine (whose largest changes are $0.99$ and $0.72$
-standard deviations), boosting, and, slightly, three of the four HAL
-fits. This is known for the group lasso \citep{detmer2018}.
-
-Symmetric HAL removes only the first of these. Its residual movement
-under negation is not coding: at a fixed penalty the zero-order fits agree
-to $10^{-5}$ standard deviations, the first-order basis is the same set of
-717{,}337 columns in both codings and the fits agree to $0.01$ standard
-deviations along the whole penalty path, and what remains comes from
-cross-validation choosing between nearly tied penalties. First-order
-symmetric HAL inherits the dependence on units. Dividing each covariate by
-its standard deviation before forming the hinges removes it (the last row
-of Table~\ref{tab:audit}): the change under new units is $0$, and under
-negation a median of $0.006$. On dummy variables symmetric HAL
-can depend on the reference level, which coding a categorical covariate by
-all of its levels removes, since changing the reference then only permutes
-the columns.
-
-\section{Discussion}
-
-HAL's anchor is a convention of the variation norm that became a modelling
-choice. It is invisible in the usual statement of HAL's rates, which are
-uniform over a variation ball and so hide how large the ball has to be for
-a given function; Proposition~\ref{prop:box} shows that for simple
-functions the radius changes by a factor of up to $2^D - 1$ with the
-coding. Symmetric HAL removes the dependence at a constant-factor cost in
-dictionary size and none in rate.
-
-In prediction the coding mostly shifts error around: symmetric HAL is not
-more accurate than a typical coding of HAL, and on boxes that face HAL's
-anchor it is somewhat worse. In causal estimation the coding can matter
-more, because the nuisance errors enter the estimate as a bias the standard
-error does not see. In the semi-synthetic LaLonde data the default
-\texttt{hal9001} estimator under the original coding has a standard
-deviation half the efficiency bound and a bias larger than that standard
-deviation, so its intervals are tight and wrong; one sign flip of the
-continuous covariates turns it into a nearly unbiased but noisier
-estimator. Neither the analyst nor the reported standard error can tell
-which of the two they have. Symmetric HAL gave an unbiased estimator near
-the bound in both codings. That is one design with one effect, and
-removing a dependence on coding does not settle the other specification
-choices, the knot rule, the degree, the propensity cap, that the LaLonde
-literature shows estimates are sensitive to \citep{smith2005}. It does
-remove a choice that no analyst knows they are making. Section~\ref{sec:audit}
-shows that such choices are common: one-sided bases, binning conventions,
-penalties on products or on unstandardized hinges, and dummy coding each
-make a fit depend on how the covariates are written down. Least squares,
-the additive model and a single tree were free of all four; every
-penalized or distance-based estimator we tried depended on at least one. Where HAL feeds a
-causal estimate, symmetric HAL with each covariate divided by its standard
-deviation is the more defensible default.
+\includegraphics[width=\textwidth]{../figures/pilot_#1.pdf}
+\caption{#2. Symmetric HAL mean risk divided by each comparator's mean
+risk, over \PilotReplicates{} paired draws per scenario. All panels use
+quantile knots and common penalty candidates and validation folds. Bars
+show pointwise Monte Carlo uncertainty; the horizontal line is equal risk.}
+\label{fig:pilot-#1}
+\end{figure}}
+\pilotfigure{upper}{Upper-orthant signal}
+\pilotfigure{lower}{Lower-orthant signal}
+\pilotfigure{mixed}{Mixed-orthant signal}
+\pilotfigure{interior}{Interior-box signal}
+\pilotfigure{conflicting}{Conflicting-orientation signal}
+\pilotfigure{additive}{Additive-step signal}
+\pilotfigure{smooth}{Smooth signal}
 
 \clearpage
 \bibliographystyle{apalike}
 \bibliography{refs}
-
-\clearpage
-\appendix
-\renewcommand{\thefigure}{\thesection\arabic{figure}}
-\renewcommand{\thetable}{\thesection\arabic{table}}
-\counterwithin*{figure}{section}
-\counterwithin*{table}{section}
-\section{All methods}\label{app:methods}
-
-Figure~\ref{fig:all_methods} shows the median risk of every method in the
-simulations of Section~\ref{sec:sims}, with the interquartile range across
-replicates.
-
-\begin{figure}[!h]
-\centering
-\includegraphics[width=\textwidth]{../figures/tier1_risk_vs_snr.pdf}
-\caption{Median risk relative to the constant predictor (lines) and its
-interquartile range across 50 replicates (bands), by true function and
-signal-to-noise ratio.}
-\label{fig:all_methods}
-\end{figure}
-
 \end{document}

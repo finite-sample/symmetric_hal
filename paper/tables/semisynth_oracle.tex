@@ -1,0 +1,20 @@
+\begin{table}[ht]
+\centering
+\small
+\caption{Oracle AIPW intervals in the known-effect population.
+Both rows use the same estimates with true nuisance functions; only the
+standard error changes. Mean and root-mean-square (RMS) standard errors
+are in outcome units. Coverage and its exact binomial Monte Carlo interval
+are percentages. The known conditional variance is available for this
+Gaussian oracle calculation, not for fitted-nuisance or TMLE estimates.}
+\label{tab:oracle}
+
+\begin{tabular}{lrrrrr}
+\toprule
+Standard error & Mean & RMS & Coverage & Lower 95\% & Upper 95\%\\
+\midrule
+Empirical influence function & 2208 & 2324 & 96.4 & 96.0 & 96.7\\
+Known conditional variance & 2269 & 2317 & 94.8 & 94.4 & 95.2\\
+\bottomrule
+\end{tabular}
+\end{table}
