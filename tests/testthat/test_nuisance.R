@@ -43,7 +43,7 @@ test_that("first-order canonical fits average ambiguous directions", {
   newx <- matrix(c(-1.5, 0.5, 1.5), ncol = 1)
   folds <- rep(1:4, each = 10)
   for (family in c("gaussian", "binomial")) {
-    y <- if (family == "gaussian") x[, 1]^2 else rep(c(0, 1), 20)
+    y <- if (family == "gaussian") x[, 1]^2 else as.numeric(abs(x[, 1]) == 2)
     original <- hal9001_canonical_cv(x, y, family, folds, list(newx))
     changed <- hal9001_canonical_cv(-8 * x + 16, y, family, folds,
                                     list(-8 * newx + 16))
