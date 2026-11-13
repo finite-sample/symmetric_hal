@@ -1,5 +1,5 @@
 # Rscript R/recode_report.R
-# Summarises data/recode_predictions.csv (from R/recode_collect.R): how much
+# Summarizes data/recode_predictions.csv (from R/recode_collect.R): how much
 # test-set predictions move across codings, for HAL and symmetric HAL.
 suppressMessages({
   library(tidyverse)
